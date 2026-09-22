@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Generator Bukti Donasi</title>
+    <title>Generator Bukti Donasi Pro</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e5d59">
@@ -21,8 +21,14 @@
         .app-container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { color: #1e5d59; text-align: center; margin-top: 0; font-size: 22px; }
         .control-group { border: 1px solid #e1e8e7; padding: 15px; margin-bottom: 15px; border-radius: 8px; background-color: #fafcfc; }
+        .control-group h3 { margin-top: 0; margin-bottom: 12px; font-size: 15px; color: #2c3e50; border-bottom: 2px solid #e1e8e7; padding-bottom: 5px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
         input[type="file"], input[type="text"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
+        input[type="range"] { width: 100%; accent-color: #1e5d59; }
+        
+        .btn-action { background-color: #4CAF50; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; }
+        .btn-danger { background-color: #f44336; }
         
         #canvas-container { position: relative; width: 100%; max-width: 100%; overflow: hidden; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; background-color: #eee; touch-action: none; }
         canvas { display: block; width: 100%; height: auto; }
@@ -38,17 +44,47 @@
     <h2>Buat Bukti Donasi</h2>
 
     <div class="control-group">
-        <label>Upload Template Kosong</label>
+        <label>1. Upload Template Kosong</label>
         <input type="file" id="uploadTemplate" accept="image/*">
         
-        <label>Upload Struk Baru</label>
+        <label>2. Upload Struk Baru</label>
         <input type="file" id="uploadStruk" accept="image/*">
 
-        <label>Nominal Baru (Contoh: 500.000)</label>
+        <label>3. Nominal Baru (Contoh: 500.000)</label>
         <input type="text" id="inputNominal" value="500.000">
     </div>
 
-    <p class="instructions"><b>Ketuk objek</b> untuk mengeditnya.<br>Geser kotak atau <b>tarik titik biru di pojok kanan bawah</b> untuk memperbesar/memperkecil.</p>
+    <!-- FITUR BARU: CROP (PEMOTONGAN STRUK) -->
+    <div class="control-group">
+        <h3>Alat Potong Struk (Crop)</h3>
+        <div class="grid-2">
+            <div>
+                <label>Potong Atas</label>
+                <input type="range" id="cropT" min="0" max="50" value="0">
+            </div>
+            <div>
+                <label>Potong Bawah</label>
+                <input type="range" id="cropB" min="0" max="50" value="0">
+            </div>
+            <div>
+                <label>Potong Kiri</label>
+                <input type="range" id="cropL" min="0" max="50" value="0">
+            </div>
+            <div>
+                <label>Potong Kanan</label>
+                <input type="range" id="cropR" min="0" max="50" value="0">
+            </div>
+        </div>
+    </div>
+
+    <!-- FITUR BARU: SENSOR / BLUR -->
+    <div class="control-group">
+        <h3>Privasi (Sensor Data)</h3>
+        <button id="btnAddSensor" class="btn-action">+ Tambah Area Sensor (Blur)</button>
+        <button id="btnDelSensor" class="btn-action btn-danger" style="display:none;">- Hapus Sensor yang Dipilih</button>
+    </div>
+
+    <p class="instructions"><b>Ketuk objek</b> (struk, teks, atau kotak sensor) untuk mengeditnya.<br>Geser kotak atau <b>tarik titik biru di pojok kanan bawah</b> untuk mengubah ukuran.</p>
 
     <div id="canvas-container">
         <canvas id="canvas"></canvas>
@@ -74,37 +110,59 @@
     
     let templateLoaded = false;
     let strukLoaded = false;
-
     let scaleCanvas = 1; 
     
-    // Properti Objek
-    let s = { x: 50, y: 200, w: 300, h: 500, scale: 1 };
+    // Properti Objek Dasar
+    let s = { x: 50, y: 200, w: 300, scale: 1 }; 
     let t = { x: 500, y: 400, size: 45 };
     
+    // State Sensor / Blur
+    let sensors = [];
+    
     // Status Interaksi
-    let activeObj = null; // 'struk' atau 'teks'
+    let activeObj = null; 
     let isDragging = false;
     let isResizing = false;
     let startMouseX, startMouseY;
     let initialPinchDistance = null;
     let initialScaleSize = 1;
 
-    // Radius (ukuran) titik handle resize agar mudah disentuh di HP
-    const handleHitRadius = 30; 
+    const handleHitRadius = 35; // Area sentuh titik perbesar
 
+    // Event Listeners Upload & Input
     document.getElementById('uploadTemplate').addEventListener('change', function(e) {
         if(e.target.files[0]) imgTemplate.src = URL.createObjectURL(e.target.files[0]);
     });
-
     document.getElementById('uploadStruk').addEventListener('change', function(e) {
         if(e.target.files[0]) imgStruk.src = URL.createObjectURL(e.target.files[0]);
     });
-
     document.getElementById('inputNominal').addEventListener('input', drawCanvas);
 
-    // Klik di area kosong membatalkan seleksi
+    // Event Listeners Crop Sliders
+    ['cropT', 'cropB', 'cropL', 'cropR'].forEach(id => {
+        document.getElementById(id).addEventListener('input', drawCanvas);
+    });
+
+    // Event Listeners Sensor Buttons
+    document.getElementById('btnAddSensor').addEventListener('click', () => {
+        // Menambahkan kotak sensor baru di tengah area struk
+        sensors.push({ x: s.x + 20, y: s.y + 20, w: 120, h: 40 });
+        activeObj = 'sensor_' + (sensors.length - 1);
+        drawCanvas();
+    });
+
+    document.getElementById('btnDelSensor').addEventListener('click', () => {
+        if (activeObj && activeObj.startsWith('sensor_')) {
+            let idx = parseInt(activeObj.split('_')[1]);
+            sensors.splice(idx, 1);
+            activeObj = null;
+            drawCanvas();
+        }
+    });
+
+    // Batal seleksi jika klik area luar
     document.addEventListener('click', (e) => {
-        if (e.target.id !== 'canvas' && e.target.tagName !== 'INPUT') {
+        if (e.target.id !== 'canvas' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
             activeObj = null;
             drawCanvas();
         }
@@ -128,23 +186,38 @@
     imgStruk.onload = function() {
         strukLoaded = true;
         s.w = (canvas.width || 1000) * 0.40; 
-        s.h = imgStruk.height * (s.w / imgStruk.width);
+        
+        // Reset crop setiap kali struk baru diunggah
+        document.getElementById('cropT').value = 0;
+        document.getElementById('cropB').value = 0;
+        document.getElementById('cropL').value = 0;
+        document.getElementById('cropR').value = 0;
+        
         drawCanvas();
     };
 
-    // Fungsi untuk mendapatkan kotak batas (Bounding Box) objek
     function getBoundingBox(type) {
         if (type === 'struk' && strukLoaded) {
-            return { x: s.x, y: s.y, w: s.w * s.scale, h: s.h * s.scale };
+            // Kalkulasi ulang rasio tinggi karena crop
+            let ct = document.getElementById('cropT').value / 100;
+            let cb = document.getElementById('cropB').value / 100;
+            let cl = document.getElementById('cropL').value / 100;
+            let cr = document.getElementById('cropR').value / 100;
+            let sw = imgStruk.width * (1 - cl - cr);
+            let sh = imgStruk.height * (1 - ct - cb);
+            let displayW = s.w * s.scale;
+            let displayH = displayW * (sh / sw);
+            return { x: s.x, y: s.y, w: displayW, h: displayH };
         } else if (type === 'teks') {
             const nominal = document.getElementById('inputNominal').value;
             ctx.font = `${t.size}px 'Gilroy-Bold', Arial, sans-serif`;
             let metrics = ctx.measureText("Rp. " + nominal);
-            
-            // Kalkulasi tinggi font (perkiraan aman)
             let boxHeight = t.size * 1.2;
             let boxY = t.y - (t.size * 0.9);
             return { x: t.x, y: boxY, w: metrics.width, h: boxHeight };
+        } else if (type.startsWith('sensor_')) {
+            let idx = parseInt(type.split('_')[1]);
+            return sensors[idx];
         }
         return null;
     }
@@ -153,34 +226,69 @@
         if (!templateLoaded) return;
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 1. Gambar Template
         ctx.drawImage(imgTemplate, 0, 0, canvas.width, canvas.height);
 
+        // 2. Gambar Struk (Dengan Pemotongan / Crop)
         if (strukLoaded) {
+            let ct = document.getElementById('cropT').value / 100;
+            let cb = document.getElementById('cropB').value / 100;
+            let cl = document.getElementById('cropL').value / 100;
+            let cr = document.getElementById('cropR').value / 100;
+
+            let sourceX = imgStruk.width * cl;
+            let sourceY = imgStruk.height * ct;
+            let sourceW = imgStruk.width * (1 - cl - cr);
+            let sourceH = imgStruk.height * (1 - ct - cb);
+
+            let displayW = s.w * s.scale;
+            let displayH = displayW * (sourceH / sourceW);
+
             ctx.save();
             ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
             ctx.shadowBlur = 20;
             ctx.shadowOffsetX = 5;
             ctx.shadowOffsetY = 10;
-            ctx.drawImage(imgStruk, s.x, s.y, s.w * s.scale, s.h * s.scale);
+            // Draw image dengan koordinat crop
+            ctx.drawImage(imgStruk, sourceX, sourceY, sourceW, sourceH, s.x, s.y, displayW, displayH);
             ctx.restore();
         }
 
+        // 3. Gambar Teks
         const nominal = document.getElementById('inputNominal').value;
         ctx.font = `${t.size}px 'Gilroy-Bold', Arial, sans-serif`;
         ctx.fillStyle = "white";
         ctx.fillText("Rp. " + nominal, t.x, t.y);
 
-        // Menggambar Grid/Garis Seleksi jika ada objek aktif
+        // 4. Render Area Sensor (Efek Kaca Buram)
+        sensors.forEach((sensor) => {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(sensor.x, sensor.y, sensor.w, sensor.h);
+            ctx.clip(); // Batasi area hanya pada kotak sensor
+            
+            // Trik efek blur: menggambar ulang canvas ke dirinya sendiri dengan filter blur
+            ctx.filter = 'blur(12px)';
+            ctx.drawImage(canvas, 0, 0);
+            
+            // Tambahkan lapisan abu-abu semi-transparan agar lebih mirip sensor sungguhan
+            ctx.filter = 'none';
+            ctx.fillStyle = 'rgba(200, 200, 200, 0.4)';
+            ctx.fill();
+            ctx.restore();
+        });
+
+        // 5. Render UI Pemilihan (Garis Putus-Putus & Titik Handle)
         if (activeObj) {
             let box = getBoundingBox(activeObj);
             if (box) {
                 ctx.save();
-                ctx.strokeStyle = '#2196F3'; // Warna seleksi biru
+                ctx.strokeStyle = '#2196F3'; 
                 ctx.lineWidth = 3 / scaleCanvas; 
                 ctx.setLineDash([10 / scaleCanvas, 10 / scaleCanvas]);
                 ctx.strokeRect(box.x, box.y, box.w, box.h);
 
-                // Menggambar titik handle di pojok kanan bawah
                 ctx.fillStyle = '#2196F3';
                 ctx.setLineDash([]);
                 let handleSize = 16 / scaleCanvas;
@@ -189,6 +297,10 @@
             }
         }
 
+        // Kontrol Tombol Hapus Sensor
+        document.getElementById('btnDelSensor').style.display = (activeObj && activeObj.startsWith('sensor_')) ? 'block' : 'none';
+
+        // Tampilkan Tombol Download
         document.getElementById('downloadBtn').style.display = "block";
         document.getElementById('downloadBtn').href = canvas.toDataURL("image/jpeg", 0.95);
     }
@@ -200,38 +312,34 @@
         let rect = canvas.getBoundingClientRect();
         let clientX = e.touches ? e.touches[0].clientX : e.clientX;
         let clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return {
-            x: (clientX - rect.left) / scaleCanvas,
-            y: (clientY - rect.top) / scaleCanvas
-        };
+        return { x: (clientX - rect.left) / scaleCanvas, y: (clientY - rect.top) / scaleCanvas };
     }
 
-    // Mendeteksi bagian apa yang diklik (Titik Resize, Teks, atau Struk)
     function getHitRegion(mouse) {
-        // Cek titik resize dari objek aktif terlebih dahulu
+        // Cek Handle Resize Objek Aktif
         if (activeObj) {
             let box = getBoundingBox(activeObj);
             if (box) {
                 let hx = box.x + box.w;
                 let hy = box.y + box.h;
                 let hitArea = handleHitRadius / scaleCanvas;
-                if (Math.abs(mouse.x - hx) <= hitArea && Math.abs(mouse.y - hy) <= hitArea) {
-                    return 'resize_handle';
-                }
+                if (Math.abs(mouse.x - hx) <= hitArea && Math.abs(mouse.y - hy) <= hitArea) return 'resize_handle';
             }
         }
 
-        // Cek area teks
-        let tBox = getBoundingBox('teks');
-        if (tBox && mouse.x >= tBox.x && mouse.x <= tBox.x + tBox.w && mouse.y >= tBox.y && mouse.y <= tBox.y + tBox.h) {
-            return 'teks';
+        // Cek Sensor (Dari yang terbaru dibuat)
+        for (let i = sensors.length - 1; i >= 0; i--) {
+            let sBox = sensors[i];
+            if (mouse.x >= sBox.x && mouse.x <= sBox.x + sBox.w && mouse.y >= sBox.y && mouse.y <= sBox.y + sBox.h) {
+                return 'sensor_' + i;
+            }
         }
 
-        // Cek area struk
+        let tBox = getBoundingBox('teks');
+        if (tBox && mouse.x >= tBox.x && mouse.x <= tBox.x + tBox.w && mouse.y >= tBox.y && mouse.y <= tBox.y + tBox.h) return 'teks';
+
         let sBox = getBoundingBox('struk');
-        if (sBox && mouse.x >= sBox.x && mouse.x <= sBox.x + sBox.w && mouse.y >= sBox.y && mouse.y <= sBox.y + sBox.h) {
-            return 'struk';
-        }
+        if (sBox && mouse.x >= sBox.x && mouse.x <= sBox.x + sBox.w && mouse.y >= sBox.y && mouse.y <= sBox.y + sBox.h) return 'struk';
 
         return null;
     }
@@ -246,13 +354,12 @@
             e.preventDefault();
             isResizing = true;
             canvas.style.cursor = 'nwse-resize';
-        } else if (hit === 'teks' || hit === 'struk') {
+        } else if (hit) {
             e.preventDefault();
-            activeObj = hit; // Set objek aktif
+            activeObj = hit;
             isDragging = true;
             canvas.style.cursor = 'grabbing';
         } else {
-            // Klik di area kosong dalam canvas, hilangkan seleksi
             activeObj = null; 
         }
 
@@ -262,7 +369,6 @@
             if (activeObj === 'struk') initialScaleSize = s.scale;
             if (activeObj === 'teks') initialScaleSize = t.size;
         }
-        
         drawCanvas();
     }
 
@@ -275,13 +381,14 @@
             let dx = mouse.x - startMouseX;
             let dy = mouse.y - startMouseY;
 
-            if (activeObj === 'struk') {
-                s.x += dx;
-                s.y += dy;
-            } else if (activeObj === 'teks') {
-                t.x += dx;
-                t.y += dy;
+            if (activeObj === 'struk') { s.x += dx; s.y += dy; } 
+            else if (activeObj === 'teks') { t.x += dx; t.y += dy; }
+            else if (activeObj.startsWith('sensor_')) {
+                let idx = parseInt(activeObj.split('_')[1]);
+                sensors[idx].x += dx;
+                sensors[idx].y += dy;
             }
+            
             startMouseX = mouse.x;
             startMouseY = mouse.y;
             drawCanvas();
@@ -291,13 +398,18 @@
             let mouse = getMousePos(e);
             
             if (activeObj === 'struk') {
-                // Skala dihitung berdasarkan jarak kursor saat ini ke titik koordinat X awal struk
                 let newWidth = mouse.x - s.x;
-                if (newWidth > 50) s.scale = newWidth / s.w; // Minimal lebar
+                if (newWidth > 50) s.scale = newWidth / s.w; 
             } else if (activeObj === 'teks') {
                 let dx = mouse.x - startMouseX;
                 t.size = initialScaleSize + (dx * 0.15); 
-                if (t.size < 10) t.size = 10; // Minimal ukuran font
+                if (t.size < 10) t.size = 10; 
+            } else if (activeObj.startsWith('sensor_')) {
+                let idx = parseInt(activeObj.split('_')[1]);
+                sensors[idx].w = mouse.x - sensors[idx].x;
+                sensors[idx].h = mouse.y - sensors[idx].y;
+                if (sensors[idx].w < 20) sensors[idx].w = 20; // Batas minimal ukuran sensor
+                if (sensors[idx].h < 20) sensors[idx].h = 20;
             }
             drawCanvas();
         }
@@ -310,18 +422,23 @@
         initialPinchDistance = null;
     }
 
-    // Zoom Mouse (Roda Scroll)
+    // Zoom Mouse 
     canvas.addEventListener('wheel', function(e) {
         e.preventDefault();
-        if (!activeObj) return; // Hanya perbesar objek jika ada yang aktif
+        if (!activeObj) return; 
         let zoomAmount = e.deltaY > 0 ? 0.95 : 1.05; 
         
         if (activeObj === 'struk') s.scale *= zoomAmount;
         else if (activeObj === 'teks') t.size *= zoomAmount;
+        else if (activeObj.startsWith('sensor_')) {
+            let idx = parseInt(activeObj.split('_')[1]);
+            sensors[idx].w *= zoomAmount;
+            sensors[idx].h *= zoomAmount;
+        }
         drawCanvas();
     }, {passive: false});
 
-    // Zoom Cubit Layar (Pinch to Zoom Mobile) untuk Objek Aktif
+    // Zoom Cubit Layar (Pinch) untuk Mobile
     canvas.addEventListener('touchmove', function(e) {
         if (e.touches.length === 2 && activeObj) {
             e.preventDefault();
@@ -331,13 +448,22 @@
 
             if (initialPinchDistance == null) {
                 initialPinchDistance = distance;
-                initialScaleSize = activeObj === 'struk' ? s.scale : t.size;
+                if (activeObj === 'struk') initialScaleSize = s.scale;
+                else if (activeObj === 'teks') initialScaleSize = t.size;
+                else if (activeObj.startsWith('sensor_')) {
+                    let idx = parseInt(activeObj.split('_')[1]);
+                    initialScaleSize = { w: sensors[idx].w, h: sensors[idx].h };
+                }
             } else {
                 const scale = distance / initialPinchDistance;
                 if (activeObj === 'struk') {
                     s.scale = initialScaleSize * scale;
                 } else if (activeObj === 'teks') {
                     t.size = initialScaleSize * scale;
+                } else if (activeObj.startsWith('sensor_')) {
+                    let idx = parseInt(activeObj.split('_')[1]);
+                    sensors[idx].w = initialScaleSize.w * scale;
+                    sensors[idx].h = initialScaleSize.h * scale;
                 }
                 drawCanvas();
             }
