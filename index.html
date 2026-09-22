@@ -24,7 +24,7 @@
         .control-group h3 { margin-top: 0; margin-bottom: 12px; font-size: 15px; color: #2c3e50; border-bottom: 2px solid #e1e8e7; padding-bottom: 5px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
-        input[type="file"], input[type="text"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
+        input[type="file"], input[type="text"], select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; background-color: white; }
         input[type="range"] { width: 100%; accent-color: #1e5d59; }
         
         .btn-action { background-color: #4CAF50; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; }
@@ -44,8 +44,12 @@
     <h2>Buat Bukti Donasi</h2>
 
     <div class="control-group">
-        <label>1. Upload Template Kosong</label>
-        <input type="file" id="uploadTemplate" accept="image/*">
+        <label>1. Pilih Template Dasar</label>
+        <select id="selectTemplate">
+            <option value="loading">Memindai template...</option>
+        </select>
+        <!-- Fitur upload manual disembunyikan secara default -->
+        <input type="file" id="uploadTemplate" accept="image/*" style="display: none;">
         
         <label>2. Upload Struk Baru</label>
         <input type="file" id="uploadStruk" accept="image/*">
@@ -54,7 +58,7 @@
         <input type="text" id="inputNominal" value="500.000">
     </div>
 
-    <!-- FITUR BARU: CROP (PEMOTONGAN STRUK) -->
+    <!-- FITUR CROP (PEMOTONGAN STRUK) -->
     <div class="control-group">
         <h3>Alat Potong Struk (Crop)</h3>
         <div class="grid-2">
@@ -77,7 +81,7 @@
         </div>
     </div>
 
-    <!-- FITUR BARU: SENSOR / BLUR -->
+    <!-- FITUR SENSOR / BLUR -->
     <div class="control-group">
         <h3>Privasi (Sensor Data)</h3>
         <button id="btnAddSensor" class="btn-action">+ Tambah Area Sensor (Blur)</button>
@@ -112,40 +116,91 @@
     let strukLoaded = false;
     let scaleCanvas = 1; 
     
-    // Properti Objek Dasar
     let s = { x: 50, y: 200, w: 300, scale: 1 }; 
     let t = { x: 500, y: 400, size: 45 };
     
-    // State Sensor / Blur
     let sensors = [];
-    
-    // Status Interaksi
     let activeObj = null; 
     let isDragging = false;
     let isResizing = false;
     let startMouseX, startMouseY;
     let initialPinchDistance = null;
     let initialScaleSize = 1;
+    const handleHitRadius = 35; 
 
-    const handleHitRadius = 35; // Area sentuh titik perbesar
+    // --- FITUR AUTO-DETECT TEMPLATE GITHUB ---
+    function checkTemplateExists(index) {
+        return new Promise((resolve) => {
+            let img = new Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+            img.src = `template_${index}.png`;
+        });
+    }
 
-    // Event Listeners Upload & Input
+    async function scanTemplates() {
+        let index = 1;
+        let options = '';
+        
+        while (true) {
+            let exists = await checkTemplateExists(index);
+            if (exists) {
+                options += `<option value="template_${index}.png">Template ${index}</option>`;
+                index++;
+            } else {
+                break; // Berhenti mencari jika file nomor berikutnya tidak ada
+            }
+        }
+        
+        if (options === '') {
+            options = `<option value="" disabled>Belum ada template di server</option>`;
+        }
+        
+        options += `<option value="manual">+ Upload Template Manual...</option>`;
+        
+        const selectEl = document.getElementById('selectTemplate');
+        selectEl.innerHTML = options;
+        
+        // Auto-pilih template pertama jika ada
+        if (index > 1) {
+            selectEl.value = 'template_1.png';
+            imgTemplate.src = 'template_1.png';
+        } else {
+            selectEl.value = 'manual';
+            document.getElementById('uploadTemplate').style.display = 'block';
+        }
+    }
+    
+    // Jalankan pemindaian saat aplikasi dibuka
+    scanTemplates();
+
+    // Logika ketika pengguna mengubah pilihan di dropdown template
+    document.getElementById('selectTemplate').addEventListener('change', function(e) {
+        if (e.target.value === 'manual') {
+            document.getElementById('uploadTemplate').style.display = 'block';
+        } else {
+            document.getElementById('uploadTemplate').style.display = 'none';
+            imgTemplate.src = e.target.value;
+        }
+    });
+
+    // Upload template manual (fallback)
     document.getElementById('uploadTemplate').addEventListener('change', function(e) {
         if(e.target.files[0]) imgTemplate.src = URL.createObjectURL(e.target.files[0]);
     });
+
+    // --- KODE UTAMA LAINNYA TETAP SAMA ---
+
     document.getElementById('uploadStruk').addEventListener('change', function(e) {
         if(e.target.files[0]) imgStruk.src = URL.createObjectURL(e.target.files[0]);
     });
     document.getElementById('inputNominal').addEventListener('input', drawCanvas);
 
-    // Event Listeners Crop Sliders
     ['cropT', 'cropB', 'cropL', 'cropR'].forEach(id => {
         document.getElementById(id).addEventListener('input', drawCanvas);
     });
 
-    // Event Listeners Sensor Buttons
     document.getElementById('btnAddSensor').addEventListener('click', () => {
-        // Menambahkan kotak sensor baru di tengah area struk
         sensors.push({ x: s.x + 20, y: s.y + 20, w: 120, h: 40 });
         activeObj = 'sensor_' + (sensors.length - 1);
         drawCanvas();
@@ -160,9 +215,8 @@
         }
     });
 
-    // Batal seleksi jika klik area luar
     document.addEventListener('click', (e) => {
-        if (e.target.id !== 'canvas' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+        if (e.target.id !== 'canvas' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') {
             activeObj = null;
             drawCanvas();
         }
@@ -187,7 +241,6 @@
         strukLoaded = true;
         s.w = (canvas.width || 1000) * 0.40; 
         
-        // Reset crop setiap kali struk baru diunggah
         document.getElementById('cropT').value = 0;
         document.getElementById('cropB').value = 0;
         document.getElementById('cropL').value = 0;
@@ -198,7 +251,6 @@
 
     function getBoundingBox(type) {
         if (type === 'struk' && strukLoaded) {
-            // Kalkulasi ulang rasio tinggi karena crop
             let ct = document.getElementById('cropT').value / 100;
             let cb = document.getElementById('cropB').value / 100;
             let cl = document.getElementById('cropL').value / 100;
@@ -227,10 +279,8 @@
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // 1. Gambar Template
         ctx.drawImage(imgTemplate, 0, 0, canvas.width, canvas.height);
 
-        // 2. Gambar Struk (Dengan Pemotongan / Crop)
         if (strukLoaded) {
             let ct = document.getElementById('cropT').value / 100;
             let cb = document.getElementById('cropB').value / 100;
@@ -250,36 +300,30 @@
             ctx.shadowBlur = 20;
             ctx.shadowOffsetX = 5;
             ctx.shadowOffsetY = 10;
-            // Draw image dengan koordinat crop
             ctx.drawImage(imgStruk, sourceX, sourceY, sourceW, sourceH, s.x, s.y, displayW, displayH);
             ctx.restore();
         }
 
-        // 3. Gambar Teks
         const nominal = document.getElementById('inputNominal').value;
         ctx.font = `${t.size}px 'Gilroy-Bold', Arial, sans-serif`;
         ctx.fillStyle = "white";
         ctx.fillText("Rp. " + nominal, t.x, t.y);
 
-        // 4. Render Area Sensor (Efek Kaca Buram)
         sensors.forEach((sensor) => {
             ctx.save();
             ctx.beginPath();
             ctx.rect(sensor.x, sensor.y, sensor.w, sensor.h);
-            ctx.clip(); // Batasi area hanya pada kotak sensor
+            ctx.clip(); 
             
-            // Trik efek blur: menggambar ulang canvas ke dirinya sendiri dengan filter blur
             ctx.filter = 'blur(12px)';
             ctx.drawImage(canvas, 0, 0);
             
-            // Tambahkan lapisan abu-abu semi-transparan agar lebih mirip sensor sungguhan
             ctx.filter = 'none';
             ctx.fillStyle = 'rgba(200, 200, 200, 0.4)';
             ctx.fill();
             ctx.restore();
         });
 
-        // 5. Render UI Pemilihan (Garis Putus-Putus & Titik Handle)
         if (activeObj) {
             let box = getBoundingBox(activeObj);
             if (box) {
@@ -297,10 +341,7 @@
             }
         }
 
-        // Kontrol Tombol Hapus Sensor
         document.getElementById('btnDelSensor').style.display = (activeObj && activeObj.startsWith('sensor_')) ? 'block' : 'none';
-
-        // Tampilkan Tombol Download
         document.getElementById('downloadBtn').style.display = "block";
         document.getElementById('downloadBtn').href = canvas.toDataURL("image/jpeg", 0.95);
     }
@@ -316,7 +357,6 @@
     }
 
     function getHitRegion(mouse) {
-        // Cek Handle Resize Objek Aktif
         if (activeObj) {
             let box = getBoundingBox(activeObj);
             if (box) {
@@ -327,7 +367,6 @@
             }
         }
 
-        // Cek Sensor (Dari yang terbaru dibuat)
         for (let i = sensors.length - 1; i >= 0; i--) {
             let sBox = sensors[i];
             if (mouse.x >= sBox.x && mouse.x <= sBox.x + sBox.w && mouse.y >= sBox.y && mouse.y <= sBox.y + sBox.h) {
@@ -408,7 +447,7 @@
                 let idx = parseInt(activeObj.split('_')[1]);
                 sensors[idx].w = mouse.x - sensors[idx].x;
                 sensors[idx].h = mouse.y - sensors[idx].y;
-                if (sensors[idx].w < 20) sensors[idx].w = 20; // Batas minimal ukuran sensor
+                if (sensors[idx].w < 20) sensors[idx].w = 20; 
                 if (sensors[idx].h < 20) sensors[idx].h = 20;
             }
             drawCanvas();
@@ -422,7 +461,6 @@
         initialPinchDistance = null;
     }
 
-    // Zoom Mouse 
     canvas.addEventListener('wheel', function(e) {
         e.preventDefault();
         if (!activeObj) return; 
@@ -438,7 +476,6 @@
         drawCanvas();
     }, {passive: false});
 
-    // Zoom Cubit Layar (Pinch) untuk Mobile
     canvas.addEventListener('touchmove', function(e) {
         if (e.touches.length === 2 && activeObj) {
             e.preventDefault();
