@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Generator Bukti Donasi</title>
     
-    <!-- Konfigurasi PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e5d59">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -18,20 +17,19 @@
             font-style: normal;
         }
 
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; overscroll-behavior-y: contain; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; overscroll-behavior-y: contain; user-select: none; }
         .app-container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { color: #1e5d59; text-align: center; margin-top: 0; font-size: 22px; }
         .control-group { border: 1px solid #e1e8e7; padding: 15px; margin-bottom: 15px; border-radius: 8px; background-color: #fafcfc; }
         label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
         input[type="file"], input[type="text"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
         
-        #canvas-container { position: relative; width: 100%; max-width: 100%; overflow: hidden; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; background-color: #eee; cursor: crosshair; touch-action: none; }
+        #canvas-container { position: relative; width: 100%; max-width: 100%; overflow: hidden; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; background-color: #eee; touch-action: none; }
         canvas { display: block; width: 100%; height: auto; }
         
         .btn-download { display: none; width: 100%; background: #f26522; color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center; text-decoration: none; margin-top: 15px; box-sizing: border-box; transition: 0.3s; }
         .btn-download:hover { background: #d95517; }
-        
-        .instructions { font-size: 12px; color: #666; margin-top: 5px; font-style: italic; text-align: center; }
+        .instructions { font-size: 12px; color: #666; margin-top: 5px; text-align: center; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -50,7 +48,7 @@
         <input type="text" id="inputNominal" value="500.000">
     </div>
 
-    <p class="instructions">Petunjuk: <b>Klik/Sentuh dan Geser</b> elemen di bawah. Gunakan <b>Roda Mouse / Cubit Layar (Pinch)</b> untuk zoom struk.</p>
+    <p class="instructions"><b>Ketuk objek</b> untuk mengeditnya.<br>Geser kotak atau <b>tarik titik biru di pojok kanan bawah</b> untuk memperbesar/memperkecil.</p>
 
     <div id="canvas-container">
         <canvas id="canvas"></canvas>
@@ -60,12 +58,9 @@
 </div>
 
 <script>
-    // --- Registrasi Service Worker untuk PWA ---
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('Service Worker terdaftar!', reg))
-                .catch(err => console.log('Pendaftaran Service Worker gagal', err));
+            navigator.serviceWorker.register('sw.js');
         });
     }
 
@@ -81,13 +76,21 @@
     let strukLoaded = false;
 
     let scaleCanvas = 1; 
+    
+    // Properti Objek
     let s = { x: 50, y: 200, w: 300, h: 500, scale: 1 };
     let t = { x: 500, y: 400, size: 45 };
     
+    // Status Interaksi
+    let activeObj = null; // 'struk' atau 'teks'
+    let isDragging = false;
+    let isResizing = false;
     let startMouseX, startMouseY;
-    let dragTarget = null; 
     let initialPinchDistance = null;
-    let initialStrukScale = 1;
+    let initialScaleSize = 1;
+
+    // Radius (ukuran) titik handle resize agar mudah disentuh di HP
+    const handleHitRadius = 30; 
 
     document.getElementById('uploadTemplate').addEventListener('change', function(e) {
         if(e.target.files[0]) imgTemplate.src = URL.createObjectURL(e.target.files[0]);
@@ -99,11 +102,19 @@
 
     document.getElementById('inputNominal').addEventListener('input', drawCanvas);
 
+    // Klik di area kosong membatalkan seleksi
+    document.addEventListener('click', (e) => {
+        if (e.target.id !== 'canvas' && e.target.tagName !== 'INPUT') {
+            activeObj = null;
+            drawCanvas();
+        }
+    });
+
     imgTemplate.onload = function() {
         templateLoaded = true;
         canvas.width = imgTemplate.width;
         canvas.height = imgTemplate.height;
-        scaleCanvas = canvas.getBoundingClientRect().width / canvas.width;
+        updateScaleCanvas();
         
         t.x = canvas.width * 0.52;
         t.y = canvas.height * 0.40;
@@ -120,6 +131,23 @@
         s.h = imgStruk.height * (s.w / imgStruk.width);
         drawCanvas();
     };
+
+    // Fungsi untuk mendapatkan kotak batas (Bounding Box) objek
+    function getBoundingBox(type) {
+        if (type === 'struk' && strukLoaded) {
+            return { x: s.x, y: s.y, w: s.w * s.scale, h: s.h * s.scale };
+        } else if (type === 'teks') {
+            const nominal = document.getElementById('inputNominal').value;
+            ctx.font = `${t.size}px 'Gilroy-Bold', Arial, sans-serif`;
+            let metrics = ctx.measureText("Rp. " + nominal);
+            
+            // Kalkulasi tinggi font (perkiraan aman)
+            let boxHeight = t.size * 1.2;
+            let boxY = t.y - (t.size * 0.9);
+            return { x: t.x, y: boxY, w: metrics.width, h: boxHeight };
+        }
+        return null;
+    }
 
     function drawCanvas() {
         if (!templateLoaded) return;
@@ -142,6 +170,25 @@
         ctx.fillStyle = "white";
         ctx.fillText("Rp. " + nominal, t.x, t.y);
 
+        // Menggambar Grid/Garis Seleksi jika ada objek aktif
+        if (activeObj) {
+            let box = getBoundingBox(activeObj);
+            if (box) {
+                ctx.save();
+                ctx.strokeStyle = '#2196F3'; // Warna seleksi biru
+                ctx.lineWidth = 3 / scaleCanvas; 
+                ctx.setLineDash([10 / scaleCanvas, 10 / scaleCanvas]);
+                ctx.strokeRect(box.x, box.y, box.w, box.h);
+
+                // Menggambar titik handle di pojok kanan bawah
+                ctx.fillStyle = '#2196F3';
+                ctx.setLineDash([]);
+                let handleSize = 16 / scaleCanvas;
+                ctx.fillRect(box.x + box.w - handleSize/2, box.y + box.h - handleSize/2, handleSize, handleSize);
+                ctx.restore();
+            }
+        }
+
         document.getElementById('downloadBtn').style.display = "block";
         document.getElementById('downloadBtn').href = canvas.toDataURL("image/jpeg", 0.95);
     }
@@ -159,18 +206,33 @@
         };
     }
 
-    function checkCollision(mouse) {
-        ctx.font = `${t.size}px 'Gilroy-Bold', Arial, sans-serif`;
-        let textWidth = ctx.measureText("Rp. " + document.getElementById('inputNominal').value).width;
-        if (mouse.x >= t.x && mouse.x <= t.x + textWidth &&
-            mouse.y >= t.y - t.size && mouse.y <= t.y + (t.size*0.2)) {
+    // Mendeteksi bagian apa yang diklik (Titik Resize, Teks, atau Struk)
+    function getHitRegion(mouse) {
+        // Cek titik resize dari objek aktif terlebih dahulu
+        if (activeObj) {
+            let box = getBoundingBox(activeObj);
+            if (box) {
+                let hx = box.x + box.w;
+                let hy = box.y + box.h;
+                let hitArea = handleHitRadius / scaleCanvas;
+                if (Math.abs(mouse.x - hx) <= hitArea && Math.abs(mouse.y - hy) <= hitArea) {
+                    return 'resize_handle';
+                }
+            }
+        }
+
+        // Cek area teks
+        let tBox = getBoundingBox('teks');
+        if (tBox && mouse.x >= tBox.x && mouse.x <= tBox.x + tBox.w && mouse.y >= tBox.y && mouse.y <= tBox.y + tBox.h) {
             return 'teks';
         }
-        if (strukLoaded && 
-            mouse.x >= s.x && mouse.x <= s.x + (s.w * s.scale) &&
-            mouse.y >= s.y && mouse.y <= s.y + (s.h * s.scale)) {
+
+        // Cek area struk
+        let sBox = getBoundingBox('struk');
+        if (sBox && mouse.x >= sBox.x && mouse.x <= sBox.x + sBox.w && mouse.y >= sBox.y && mouse.y <= sBox.y + sBox.h) {
             return 'struk';
         }
+
         return null;
     }
 
@@ -178,57 +240,90 @@
         if(e.touches && e.touches.length === 2) return; 
         updateScaleCanvas();
         let mouse = getMousePos(e);
-        dragTarget = checkCollision(mouse);
-        
-        if (dragTarget) {
+        let hit = getHitRegion(mouse);
+
+        if (hit === 'resize_handle') {
             e.preventDefault();
+            isResizing = true;
+            canvas.style.cursor = 'nwse-resize';
+        } else if (hit === 'teks' || hit === 'struk') {
+            e.preventDefault();
+            activeObj = hit; // Set objek aktif
+            isDragging = true;
+            canvas.style.cursor = 'grabbing';
+        } else {
+            // Klik di area kosong dalam canvas, hilangkan seleksi
+            activeObj = null; 
+        }
+
+        if (hit) {
             startMouseX = mouse.x;
             startMouseY = mouse.y;
-            canvas.style.cursor = 'grabbing';
+            if (activeObj === 'struk') initialScaleSize = s.scale;
+            if (activeObj === 'teks') initialScaleSize = t.size;
         }
+        
+        drawCanvas();
     }
 
     function drag(e) {
-        if (!dragTarget || (e.touches && e.touches.length === 2)) return;
-        e.preventDefault();
-        let mouse = getMousePos(e);
-        let dx = mouse.x - startMouseX;
-        let dy = mouse.y - startMouseY;
+        if (e.touches && e.touches.length === 2) return;
+        
+        if (isDragging && activeObj) {
+            e.preventDefault();
+            let mouse = getMousePos(e);
+            let dx = mouse.x - startMouseX;
+            let dy = mouse.y - startMouseY;
 
-        if (dragTarget === 'struk') {
-            s.x += dx;
-            s.y += dy;
-        } else if (dragTarget === 'teks') {
-            t.x += dx;
-            t.y += dy;
+            if (activeObj === 'struk') {
+                s.x += dx;
+                s.y += dy;
+            } else if (activeObj === 'teks') {
+                t.x += dx;
+                t.y += dy;
+            }
+            startMouseX = mouse.x;
+            startMouseY = mouse.y;
+            drawCanvas();
+
+        } else if (isResizing && activeObj) {
+            e.preventDefault();
+            let mouse = getMousePos(e);
+            
+            if (activeObj === 'struk') {
+                // Skala dihitung berdasarkan jarak kursor saat ini ke titik koordinat X awal struk
+                let newWidth = mouse.x - s.x;
+                if (newWidth > 50) s.scale = newWidth / s.w; // Minimal lebar
+            } else if (activeObj === 'teks') {
+                let dx = mouse.x - startMouseX;
+                t.size = initialScaleSize + (dx * 0.15); 
+                if (t.size < 10) t.size = 10; // Minimal ukuran font
+            }
+            drawCanvas();
         }
-
-        startMouseX = mouse.x;
-        startMouseY = mouse.y;
-        drawCanvas();
     }
 
     function stopDrag() {
-        dragTarget = null;
-        canvas.style.cursor = 'crosshair';
+        isDragging = false;
+        isResizing = false;
+        canvas.style.cursor = 'default';
         initialPinchDistance = null;
     }
 
-    // Zoom Mouse
+    // Zoom Mouse (Roda Scroll)
     canvas.addEventListener('wheel', function(e) {
         e.preventDefault();
-        let mouse = getMousePos(e);
-        let target = checkCollision(mouse);
+        if (!activeObj) return; // Hanya perbesar objek jika ada yang aktif
         let zoomAmount = e.deltaY > 0 ? 0.95 : 1.05; 
         
-        if (target === 'struk') s.scale *= zoomAmount;
-        else if (target === 'teks') t.size *= zoomAmount;
+        if (activeObj === 'struk') s.scale *= zoomAmount;
+        else if (activeObj === 'teks') t.size *= zoomAmount;
         drawCanvas();
     }, {passive: false});
 
-    // Zoom Cubit Layar (Pinch to Zoom Mobile)
+    // Zoom Cubit Layar (Pinch to Zoom Mobile) untuk Objek Aktif
     canvas.addEventListener('touchmove', function(e) {
-        if (e.touches.length === 2) {
+        if (e.touches.length === 2 && activeObj) {
             e.preventDefault();
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -236,10 +331,14 @@
 
             if (initialPinchDistance == null) {
                 initialPinchDistance = distance;
-                initialStrukScale = s.scale;
+                initialScaleSize = activeObj === 'struk' ? s.scale : t.size;
             } else {
                 const scale = distance / initialPinchDistance;
-                s.scale = initialStrukScale * scale;
+                if (activeObj === 'struk') {
+                    s.scale = initialScaleSize * scale;
+                } else if (activeObj === 'teks') {
+                    t.size = initialScaleSize * scale;
+                }
                 drawCanvas();
             }
         }
