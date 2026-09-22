@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bukti-donasi-v1';
+const CACHE_NAME = 'bukti-donasi-v2';
 const urlsToCache = [
   './',
   './index.html',
