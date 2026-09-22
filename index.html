@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Generator Bukti Donasi</title>
+    
+    <!-- Konfigurasi PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e5d59">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <style>
+        @font-face {
+            font-family: 'Gilroy-Bold';
+            src: url('Gilroy-Bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; overscroll-behavior-y: contain; }
+        .app-container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { color: #1e5d59; text-align: center; margin-top: 0; font-size: 22px; }
+        .control-group { border: 1px solid #e1e8e7; padding: 15px; margin-bottom: 15px; border-radius: 8px; background-color: #fafcfc; }
+        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input[type="file"], input[type="text"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
+        
+        #canvas-container { position: relative; width: 100%; max-width: 100%; overflow: hidden; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; background-color: #eee; cursor: crosshair; touch-action: none; }
+        canvas { display: block; width: 100%; height: auto; }
+        
+        .btn-download { display: none; width: 100%; background: #f26522; color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center; text-decoration: none; margin-top: 15px; box-sizing: border-box; transition: 0.3s; }
+        .btn-download:hover { background: #d95517; }
+        
+        .instructions { font-size: 12px; color: #666; margin-top: 5px; font-style: italic; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <h2>Buat Bukti Donasi</h2>
+
+    <div class="control-group">
+        <label>Upload Template Kosong</label>
+        <input type="file" id="uploadTemplate" accept="image/*">
+        
+        <label>Upload Struk Baru</label>
+        <input type="file" id="uploadStruk" accept="image/*">
+
+        <label>Nominal Baru (Contoh: 500.000)</label>
+        <input type="text" id="inputNominal" value="500.000">
+    </div>
+
+    <p class="instructions">Petunjuk: <b>Klik/Sentuh dan Geser</b> elemen di bawah. Gunakan <b>Roda Mouse / Cubit Layar (Pinch)</b> untuk zoom struk.</p>
+
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+    
+    <a id="downloadBtn" class="btn-download" download="Bukti_Donasi_Final.jpg">Download Gambar</a>
+</div>
+
+<script>
+    // --- Registrasi Service Worker untuk PWA ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker terdaftar!', reg))
+                .catch(err => console.log('Pendaftaran Service Worker gagal', err));
+        });
+    }
+
+    document.fonts.load('10pt "Gilroy-Bold"').then(() => { drawCanvas(); });
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    let imgTemplate = new Image();
+    let imgStruk = new Image();
+    
+    let templateLoaded = false;
+    let strukLoaded = false;
+
+    let scaleCanvas = 1; 
+    let s = { x: 50, y: 200, w: 300, h: 500, scale: 1 };
+    let t = { x: 500, y: 400, size: 45 };
+    
+    let startMouseX, startMouseY;
+    let dragTarget = null; 
+    let initialPinchDistance = null;
+    let initialStrukScale = 1;
+
+    document.getElementById('uploadTemplate').addEventListener('change', function(e) {
+        if(e.target.files[0]) imgTemplate.src = URL.createObjectURL(e.target.files[0]);
+    });
+
+    document.getElementById('uploadStruk').addEventListener('change', function(e) {
+        if(e.target.files[0]) imgStruk.src = URL.createObjectURL(e.target.files[0]);
+    });
+
+    document.getElementById('inputNominal').addEventListener('input', drawCanvas);
+
+    imgTemplate.onload = function() {
+        templateLoaded = true;
+        canvas.width = imgTemplate.width;
+        canvas.height = imgTemplate.height;
+        scaleCanvas = canvas.getBoundingClientRect().width / canvas.width;
+        
+        t.x = canvas.width * 0.52;
+        t.y = canvas.height * 0.40;
+        t.size = canvas.width * 0.055;
+
+        s.x = canvas.width * 0.05;
+        s.y = canvas.height * 0.15;
+        drawCanvas();
+    };
+
+    imgStruk.onload = function() {
+        strukLoaded = true;
+        s.w = (canvas.width || 1000) * 0.40; 
+        s.h = imgStruk.height * (s.w / imgStruk.width);
+        drawCanvas();
+    };
+
+    function drawCanvas() {
+        if (!templateLoaded) return;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(imgTemplate, 0, 0, canvas.width, canvas.height);
+
+        if (strukLoaded) {
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetX = 5;
+            ctx.shadowOffsetY = 10;
+            ctx.drawImage(imgStruk, s.x, s.y, s.w * s.scale, s.h * s.scale);
+            ctx.restore();
+        }
+
+        const nominal = document.getElementById('inputNominal').value;
+        ctx.font = `${t.size}px 'Gilroy-Bold', Arial, sans-serif`;
+        ctx.fillStyle = "white";
+        ctx.fillText("Rp. " + nominal, t.x, t.y);
+
+        document.getElementById('downloadBtn').style.display = "block";
+        document.getElementById('downloadBtn').href = canvas.toDataURL("image/jpeg", 0.95);
+    }
+
+    function updateScaleCanvas() { scaleCanvas = canvas.getBoundingClientRect().width / canvas.width; }
+    window.addEventListener('resize', updateScaleCanvas);
+
+    function getMousePos(e) {
+        let rect = canvas.getBoundingClientRect();
+        let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: (clientX - rect.left) / scaleCanvas,
+            y: (clientY - rect.top) / scaleCanvas
+        };
+    }
+
+    function checkCollision(mouse) {
+        ctx.font = `${t.size}px 'Gilroy-Bold', Arial, sans-serif`;
+        let textWidth = ctx.measureText("Rp. " + document.getElementById('inputNominal').value).width;
+        if (mouse.x >= t.x && mouse.x <= t.x + textWidth &&
+            mouse.y >= t.y - t.size && mouse.y <= t.y + (t.size*0.2)) {
+            return 'teks';
+        }
+        if (strukLoaded && 
+            mouse.x >= s.x && mouse.x <= s.x + (s.w * s.scale) &&
+            mouse.y >= s.y && mouse.y <= s.y + (s.h * s.scale)) {
+            return 'struk';
+        }
+        return null;
+    }
+
+    function startDrag(e) {
+        if(e.touches && e.touches.length === 2) return; 
+        updateScaleCanvas();
+        let mouse = getMousePos(e);
+        dragTarget = checkCollision(mouse);
+        
+        if (dragTarget) {
+            e.preventDefault();
+            startMouseX = mouse.x;
+            startMouseY = mouse.y;
+            canvas.style.cursor = 'grabbing';
+        }
+    }
+
+    function drag(e) {
+        if (!dragTarget || (e.touches && e.touches.length === 2)) return;
+        e.preventDefault();
+        let mouse = getMousePos(e);
+        let dx = mouse.x - startMouseX;
+        let dy = mouse.y - startMouseY;
+
+        if (dragTarget === 'struk') {
+            s.x += dx;
+            s.y += dy;
+        } else if (dragTarget === 'teks') {
+            t.x += dx;
+            t.y += dy;
+        }
+
+        startMouseX = mouse.x;
+        startMouseY = mouse.y;
+        drawCanvas();
+    }
+
+    function stopDrag() {
+        dragTarget = null;
+        canvas.style.cursor = 'crosshair';
+        initialPinchDistance = null;
+    }
+
+    // Zoom Mouse
+    canvas.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        let mouse = getMousePos(e);
+        let target = checkCollision(mouse);
+        let zoomAmount = e.deltaY > 0 ? 0.95 : 1.05; 
+        
+        if (target === 'struk') s.scale *= zoomAmount;
+        else if (target === 'teks') t.size *= zoomAmount;
+        drawCanvas();
+    }, {passive: false});
+
+    // Zoom Cubit Layar (Pinch to Zoom Mobile)
+    canvas.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (initialPinchDistance == null) {
+                initialPinchDistance = distance;
+                initialStrukScale = s.scale;
+            } else {
+                const scale = distance / initialPinchDistance;
+                s.scale = initialStrukScale * scale;
+                drawCanvas();
+            }
+        }
+    }, {passive: false});
+
+    canvas.addEventListener('mousedown', startDrag);
+    canvas.addEventListener('mousemove', drag);
+    window.addEventListener('mouseup', stopDrag);
+    
+    canvas.addEventListener('touchstart', startDrag, {passive: false});
+    canvas.addEventListener('touchmove', drag, {passive: false});
+    window.addEventListener('touchend', stopDrag);
+
+</script>
+</body>
+</html>
