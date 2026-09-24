@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Generator Bukti Donasi Pro</title>
+    <title>Bukti Donasi • LAZ Sidogiri</title>
     
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#1e5d59">
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <style>
@@ -17,47 +17,172 @@
             font-style: normal;
         }
 
-        /* Reset & Layout Utama */
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #e9ecef; user-select: none; -webkit-user-select: none; }
-        
-        /* Area Kerja (Kanvas) */
-        #workspace { position: absolute; top: 0; left: 0; right: 0; bottom: 70px; overflow: hidden; touch-action: none; background-image: radial-gradient(#d1d1d1 1px, transparent 1px); background-size: 20px 20px; }
-        canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        
-        /* Toolbar Bawah ala Canva */
-        #toolbar { position: absolute; bottom: 0; left: 0; right: 0; height: 70px; background: white; display: flex; overflow-x: auto; white-space: nowrap; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); padding: 5px 10px; box-sizing: border-box; align-items: center; z-index: 100; }
-        #toolbar::-webkit-scrollbar { display: none; }
-        .tool-btn { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 65px; height: 100%; border: none; background: transparent; font-size: 11px; cursor: pointer; color: #555; font-weight: 600; transition: 0.2s; border-radius: 8px; }
-        .tool-btn:hover, .tool-btn.active { background: #f0f5f4; color: #1e5d59; }
-        .tool-btn span.icon { font-size: 22px; margin-bottom: 4px; }
+        :root {
+            --green: #1e5d59;
+            --green-dark: #164b48;
+            --orange: #f26522;
+            --ink: #182321;
+            --muted: #6b7775;
+            --surface: rgba(255,255,255,.96);
+            --line: #e5ebe9;
+        }
 
-        /* Panel Menu Melayang (Popup) */
-        .panel { position: absolute; bottom: 85px; left: 10px; right: 10px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; z-index: 99; transform: translateY(10px); opacity: 0; transition: all 0.3s ease; max-height: 60vh; overflow-y: auto; }
-        .panel.show { display: block; transform: translateY(0); opacity: 1; }
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .panel-header h3 { margin: 0; font-size: 16px; color: #1e5d59; }
-        .close-btn { background: none; border: none; font-size: 20px; color: #999; cursor: pointer; padding: 0; line-height: 1; }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #eef2f1;
+            color: var(--ink);
+            user-select: none;
+            -webkit-user-select: none;
+        }
 
-        /* Elemen Input dalam Panel */
-        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #444; }
-        input[type="file"], input[type="text"], select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; background-color: #fafafa; outline: none; }
-        input[type="text"]:focus, select:focus { border-color: #1e5d59; }
-        input[type="range"] { width: 100%; accent-color: #1e5d59; margin-bottom: 15px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        
-        .btn-action { background-color: #1e5d59; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; font-size: 14px; }
-        .btn-danger { background-color: #ff4757; }
-        
-        /* Tombol Spesial Simpan */
-        .tool-btn.btn-save { background: #f26522; color: white; border-radius: 8px; margin-left: auto; width: auto; padding: 0 20px; flex-direction: row; gap: 8px; }
-        .tool-btn.btn-save:hover { background: #d95517; }
-        .tool-btn.btn-save span.icon { margin-bottom: 0; font-size: 18px; }
+        #appHeader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            background: rgba(255,255,255,.94);
+            border-bottom: 1px solid var(--line);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 150;
+        }
+        .brand { display:flex; align-items:center; gap:10px; min-width:0; }
+        .brand-mark {
+            width:38px; height:38px; border-radius:11px;
+            display:grid; place-items:center;
+            background: linear-gradient(135deg,var(--green),#2f7772);
+            color:#fff; font-family:'Gilroy-Bold',sans-serif; font-size:17px;
+            box-shadow:0 5px 14px rgba(30,93,89,.2);
+        }
+        .brand-copy { min-width:0; }
+        .brand-title { font-weight:800; font-size:15px; line-height:1.1; }
+        .brand-sub { color:var(--muted); font-size:11px; margin-top:3px; }
+        .status {
+            display:flex; align-items:center; gap:7px;
+            color:#50706c; font-size:11px; font-weight:700;
+            background:#f1f7f5; border:1px solid #dcebe7;
+            padding:7px 10px; border-radius:999px;
+        }
+        .status-dot { width:7px; height:7px; border-radius:50%; background:#28a46a; box-shadow:0 0 0 3px rgba(40,164,106,.12); }
 
-        /* Indikator Panduan Singkat */
-        #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; pointer-events: none; opacity: 1; transition: opacity 1s; z-index: 200; }
-    </style>
-</head>
+        #workspace {
+            position:absolute; top:64px; left:0; right:0; bottom:78px;
+            overflow:hidden; touch-action:none;
+            background-color:#edf1f0;
+            background-image:radial-gradient(#cbd5d2 1px,transparent 1px);
+            background-size:22px 22px;
+        }
+        canvas {
+            position:absolute; top:0; left:0; transform-origin:0 0;
+            box-shadow:0 14px 40px rgba(24,35,33,.16);
+            border-radius:3px;
+        }
+
+        #toast {
+            position:absolute; top:78px; left:50%; transform:translateX(-50%);
+            background:rgba(24,35,33,.88); color:#fff; padding:9px 14px;
+            border-radius:999px; font-size:11px; pointer-events:none;
+            opacity:1; transition:opacity .5s; z-index:200;
+            box-shadow:0 8px 24px rgba(0,0,0,.14);
+        }
+
+        #toolbar {
+            position:absolute; bottom:0; left:0; right:0; height:78px;
+            background:rgba(255,255,255,.97);
+            display:flex; overflow-x:auto; white-space:nowrap;
+            box-shadow:0 -6px 24px rgba(24,35,33,.08);
+            padding:8px 12px; align-items:center; gap:4px;
+            border-top:1px solid var(--line); z-index:100;
+        }
+        #toolbar::-webkit-scrollbar { display:none; }
+        .tool-btn {
+            flex:0 0 auto; display:flex; flex-direction:column;
+            align-items:center; justify-content:center; width:68px; height:62px;
+            border:0; background:transparent; font-size:10px; cursor:pointer;
+            color:#64716f; font-weight:700; transition:.18s; border-radius:13px;
+        }
+        .tool-btn:hover, .tool-btn.active { background:#edf6f4; color:var(--green); }
+        .tool-btn .icon {
+            display:grid; place-items:center; width:28px; height:28px;
+            margin-bottom:5px; font-size:0;
+        }
+        .tool-btn .icon svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+        .tool-btn.btn-save {
+            background:var(--orange); color:#fff; border-radius:13px;
+            margin-left:auto; width:auto; min-width:116px; padding:0 17px;
+            flex-direction:row; gap:8px; box-shadow:0 7px 16px rgba(242,101,34,.22);
+        }
+        .tool-btn.btn-save:hover { background:#dc581a; }
+        .tool-btn.btn-save .icon { margin-bottom:0; width:24px; height:24px; }
+
+        .panel {
+            position:absolute; bottom:90px; left:12px; right:12px;
+            background:var(--surface); padding:18px; border:1px solid rgba(229,235,233,.9);
+            border-radius:18px; box-shadow:0 18px 45px rgba(24,35,33,.18);
+            display:none; z-index:99; transform:translateY(10px); opacity:0;
+            transition:.22s ease; max-height:62vh; overflow-y:auto;
+            backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+        }
+        .panel.show { display:block; transform:translateY(0); opacity:1; }
+        .panel-header {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--line);
+        }
+        .panel-header h3 { margin:0; font-size:15px; color:var(--ink); }
+        .close-btn {
+            width:32px; height:32px; border:0; border-radius:10px;
+            background:#f1f4f3; color:#71807d; cursor:pointer; font-size:20px;
+        }
+
+        label { display:block; font-size:12px; font-weight:800; margin-bottom:7px; color:#51605d; }
+        input[type="file"], input[type="text"], select {
+            width:100%; padding:12px 13px; margin-bottom:14px;
+            border:1px solid #dfe7e4; border-radius:11px; font-size:14px;
+            background:#f8faf9; outline:none; color:var(--ink);
+        }
+        input[type="text"]:focus, select:focus { border-color:#78aaa4; box-shadow:0 0 0 3px rgba(30,93,89,.08); }
+        input[type="range"] { width:100%; accent-color:var(--green); margin-bottom:14px; }
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .btn-action {
+            background:var(--green); color:#fff; border:0; padding:12px;
+            border-radius:11px; cursor:pointer; font-weight:800; width:100%;
+            margin-bottom:9px; font-size:13px;
+        }
+        .btn-action:hover { background:var(--green-dark); }
+        .btn-danger { background:#c84c4c; }
+
+        @media (min-width: 800px) {
+            #toolbar { padding-left:20px; padding-right:20px; }
+            .panel { left:20px; right:auto; width:390px; }
+        }
+        @media (max-width: 520px) {
+            .brand-sub { display:none; }
+            .status { padding:7px 9px; }
+            .status-text { display:none; }
+            .tool-btn { width:62px; }
+        }
+    </style></head>
 <body>
+    <header id="appHeader">
+        <div class="brand">
+            <div class="brand-mark">L</div>
+            <div class="brand-copy">
+                <div class="brand-title">Bukti Donasi</div>
+                <div class="brand-sub">Produksi Konten • LAZ Sidogiri</div>
+            </div>
+        </div>
+        <div class="status"><span class="status-dot"></span><span class="status-text">Siap digunakan</span></div>
+    </header>
 
     <!-- Indikator Panduan -->
     <div id="toast">Cubit latar untuk Zoom & Geser</div>
@@ -124,13 +249,13 @@
 
     <!-- Toolbar Bawah -->
     <div id="toolbar">
-        <button class="tool-btn" onclick="togglePanel('template')"><span class="icon">🖼️</span>Template</button>
-        <button class="tool-btn" onclick="togglePanel('struk')"><span class="icon">🧾</span>Struk</button>
-        <button class="tool-btn" onclick="togglePanel('nominal')"><span class="icon">✏️</span>Teks</button>
-        <button class="tool-btn" onclick="togglePanel('crop')"><span class="icon">✂️</span>Potong</button>
-        <button class="tool-btn" onclick="togglePanel('sensor')"><span class="icon">💧</span>Blur</button>
+        <button class="tool-btn" onclick="togglePanel('template')"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.5"/><path d="m5 17 4-4 3 3 2-2 5 3"/></svg></span>Template</button>
+        <button class="tool-btn" onclick="togglePanel('struk')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg></span>Struk</button>
+        <button class="tool-btn" onclick="togglePanel('nominal')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M4 19 15 8"/><path d="m13 6 5 5"/><path d="M5 5h7M5 9h4"/></svg></span>Teks</button>
+        <button class="tool-btn" onclick="togglePanel('crop')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M8 3v13a5 5 0 0 0 5 5h8M3 8h13a5 5 0 0 0 5 5v8"/></svg></span>Potong</button>
+        <button class="tool-btn" onclick="togglePanel('sensor')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 4c5 0 8 8 8 8s-3 8-8 8-8-8-8-8 3-8 8-8Z"/><circle cx="12" cy="12" r="2.5"/></svg></span>Privasi</button>
         <a id="downloadBtn" class="tool-btn btn-save" style="display:none;" download="Bukti_Donasi.jpg">
-            <span class="icon">⬇️</span>Simpan
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg></span>Simpan Bukti
         </a>
     </div>
 
