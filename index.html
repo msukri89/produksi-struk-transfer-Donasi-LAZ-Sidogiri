@@ -77,10 +77,12 @@
         .status-text { display:none; }
         .header-actions { display:flex; align-items:center; gap:6px; }
         .header-edit {
-            width:40px; height:40px; border:1px solid rgba(255,255,255,.18); border-radius:10px;
-            background:rgba(255,255,255,.10); color:#fff; display:grid; place-items:center;
+            width:40px; height:40px; border:1px solid rgba(255,255,255,.16); border-radius:11px;
+            background:rgba(255,255,255,.08); color:#fff; display:grid; place-items:center;
             cursor:pointer; padding:0;
+            transition:background .16s, border-color .16s, transform .16s;
         }
+        .header-edit:hover { background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.24); }
         .header-edit:active { transform:scale(.96); }
         .header-edit:disabled { opacity:.42; }
         .header-edit.reset { color:#fff; }
@@ -88,10 +90,12 @@
         .header-edit-label { display:none; }
         .header-save {
             width:40px; height:40px; border:1px solid rgba(255,255,255,.16);
-            border-radius:10px; background:rgba(255,255,255,.10);
+            border-radius:11px; background:rgba(255,255,255,.08);
             color:#fff; display:grid; place-items:center; padding:0;
             text-decoration:none; cursor:pointer;
+            transition:background .16s, border-color .16s, transform .16s;
         }
+        .header-save:hover { background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.24); }
         .header-save:active { transform:scale(.96); }
         .header-save svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 
@@ -134,17 +138,18 @@
             color:rgba(255,255,255,.86); font-weight:600; transition:background .16s,color .16s,transform .16s;
             border-radius:12px;
         }
-        .tool-btn:hover, .tool-btn.active { background:rgba(255,255,255,.14); color:#fff; }
+        .tool-btn:hover, .tool-btn.active { background:rgba(255,255,255,.12); color:#fff; }
+        .tool-btn.active { box-shadow:inset 0 2px 0 rgba(255,255,255,.82); }
         .tool-btn:active { transform:scale(.96); }
         .tool-btn .icon {
             display:grid; place-items:center; width:30px; height:30px;
-            margin-bottom:4px; font-size:0;
+            margin-bottom:3px; font-size:0;
         }
         .tool-btn .icon svg { width:25px; height:25px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 
 
         .panel {
-            position:absolute; bottom:84px; left:12px; right:12px;
+            position:absolute; bottom:94px; left:12px; right:12px;
             background:#fff; padding:16px;
             border:1px solid var(--line);
             border-radius:16px; box-shadow:0 14px 35px rgba(32,40,38,.14);
@@ -192,7 +197,7 @@
 <body>
     <header id="appHeader">
         <div class="brand">
-            <div class="brand-mark">L</div>
+            <div class="brand-mark" aria-label="LAZ Sidogiri">L</div>
             <div class="brand-copy">
                 <div class="brand-title">Bukti Donasi</div>
                 <div class="brand-sub">Produksi Konten • LAZ Sidogiri</div>
@@ -277,11 +282,11 @@
 
     <!-- Toolbar Bawah -->
     <div id="toolbar">
-        <button class="tool-btn" onclick="togglePanel('template')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><circle cx="8.5" cy="9" r="1.5"/><path d="m5.5 17 4-4 3 3 2-2 4 3"/></svg></span>Template</button>
-        <button class="tool-btn" onclick="togglePanel('struk')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17l-3-2-3 2-3-2-3 2v-17Z"/><path d="M9 8h6M9 11.5h6M9 15h4"/></svg></span>Struk</button>
-        <button class="tool-btn" onclick="togglePanel('nominal')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19 11.5 5h1L18 19"/><path d="M8.5 14h6"/></svg></span>Teks</button>
+        <button class="tool-btn" onclick="togglePanel('template')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><circle cx="8.5" cy="9" r="1.35"/><path d="m5.5 17 4-4 3 3 2-2 4 3"/></svg></span>Template</button>
+        <button class="tool-btn" onclick="togglePanel('struk')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17l-3-1.8-3 1.8-3-1.8-3 1.8v-17Z"/><path d="M9 8h6M9 11.5h6M9 15h3.5"/></svg></span>Struk</button>
+        <button class="tool-btn" onclick="togglePanel('nominal')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 19 11.5 5h1L17 19"/><path d="M8.8 13.5h5.4"/><path d="M7 21h10"/></svg></span>Teks</button>
         <button class="tool-btn" onclick="togglePanel('crop')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M8 3v13a5 5 0 0 0 5 5h8M3 8h13a5 5 0 0 0 5 5v8"/></svg></span>Potong</button>
-        <button class="tool-btn" onclick="togglePanel('sensor')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12s3.2-6.5 8.5-6.5 8.5 6.5 8.5 6.5-3.2 6.5-8.5 6.5S3.5 12 3.5 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></span>Privasi</button>
+        <button class="tool-btn" onclick="togglePanel('sensor')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12s3.2-6.2 8.5-6.2 8.5 6.2 8.5 6.2-3.2 6.2-8.5 6.2S3.5 12 3.5 12Z"/><circle cx="12" cy="12" r="2.5"/></svg></span>Privasi</button>
 
     </div>
 
@@ -506,7 +511,7 @@
         if (!templateLoaded) return;
         const ws = document.getElementById('workspace');
         // Fit gambar ke layar dengan margin 10%
-        const ratio = Math.min(ws.clientWidth / canvas.width, ws.clientHeight / canvas.height) * 0.95;
+        const ratio = Math.min(ws.clientWidth / canvas.width, ws.clientHeight / canvas.height) * 0.97;
         wpZoom = ratio;
         wpPanX = (ws.clientWidth - (canvas.width * wpZoom)) / 2;
         wpPanY = (ws.clientHeight - (canvas.height * wpZoom)) / 2;
