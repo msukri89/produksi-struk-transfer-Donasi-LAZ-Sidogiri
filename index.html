@@ -481,8 +481,8 @@
         }
         closePanels();
     });
+    document.getElementById('inputNominal').addEventListener('focus', recordHistory);
     document.getElementById('inputNominal').addEventListener('input', drawCanvas);
-    document.getElementById('inputNominal').addEventListener('change', recordHistory);
     ['cropT', 'cropB', 'cropL', 'cropR'].forEach(id => {
         document.getElementById(id).addEventListener('pointerdown', recordHistory);
         document.getElementById(id).addEventListener('input', drawCanvas);
