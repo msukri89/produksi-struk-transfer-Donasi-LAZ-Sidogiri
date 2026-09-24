@@ -18,14 +18,14 @@
         }
 
         :root {
-            --green: #1f6661;
-            --green-dark: #174f4b;
+            --green: #1e6466;
+            --green-dark: #174f50;
             --orange: #f36b2c;
             --ink: #202826;
             --muted: #7b8582;
             --surface: #ffffff;
             --line: #e9eeec;
-            --soft: #f5f7f6;
+            --soft: rgba(255,255,255,.12);
         }
 
         * { box-sizing: border-box; }
@@ -51,25 +51,25 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 14px;
-            background: rgba(255,255,255,.98);
-            border-bottom: 1px solid var(--line);
+            background: var(--green);
+            border-bottom: 0;
             z-index: 150;
         }
         .brand { display:flex; align-items:center; gap:9px; min-width:0; }
         .brand-mark {
             width:34px; height:34px; border-radius:10px;
             display:grid; place-items:center;
-            background:var(--green);
+            background:rgba(255,255,255,.14);
             color:#fff; font-family:'Gilroy-Bold',sans-serif; font-size:16px;
         }
         .brand-copy { min-width:0; }
-        .brand-title { font-weight:750; font-size:15px; line-height:1.1; letter-spacing:-.2px; }
+        .brand-title { font-weight:750; font-size:15px; line-height:1.1; letter-spacing:-.2px; color:#fff; }
         .brand-sub { display:none; }
         .status {
             width:30px; height:30px;
             display:grid; place-items:center;
-            background:var(--soft);
-            border:1px solid var(--line);
+            background:rgba(255,255,255,.10);
+            border:1px solid rgba(255,255,255,.16);
             border-radius:50%;
             padding:0;
         }
@@ -77,15 +77,24 @@
         .status-text { display:none; }
         .header-actions { display:flex; align-items:center; gap:6px; }
         .header-edit {
-            width:34px; height:34px; border:1px solid var(--line); border-radius:10px;
-            background:#fff; color:#89928f; display:grid; place-items:center;
+            width:34px; height:34px; border:1px solid rgba(255,255,255,.16); border-radius:10px;
+            background:rgba(255,255,255,.10); color:#fff; display:grid; place-items:center;
             cursor:pointer; padding:0;
         }
         .header-edit:active { transform:scale(.96); }
-        .header-edit:disabled { opacity:.38; }
-        .header-edit.reset { color:#b35c5c; }
+        .header-edit:disabled { opacity:.42; }
+        .header-edit.reset { color:#fff; }
         .header-edit svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
         .header-edit-label { display:none; }
+        .header-save {
+            width:34px; height:34px; border:1px solid rgba(255,255,255,.16);
+            border-radius:10px; background:rgba(255,255,255,.10);
+            color:#fff; display:grid; place-items:center; padding:0;
+            text-decoration:none; cursor:pointer;
+        }
+        .header-save:active { transform:scale(.96); }
+        .header-save svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
 
         #workspace {
             position:absolute; top:58px; left:0; right:0; bottom:76px;
@@ -112,35 +121,27 @@
 
         #toolbar {
             position:absolute; bottom:0; left:0; right:0; height:76px;
-            background:#fff;
+            background:var(--green);
             display:flex; overflow-x:auto; white-space:nowrap;
             padding:7px 10px; align-items:center; gap:2px;
-            border-top:1px solid var(--line); z-index:100;
+            border-top:0; z-index:100;
         }
         #toolbar::-webkit-scrollbar { display:none; }
         .tool-btn {
             flex:0 0 auto; display:flex; flex-direction:column;
             align-items:center; justify-content:center; width:62px; height:60px;
             border:0; background:transparent; font-size:10px; cursor:pointer;
-            color:#77817e; font-weight:600; transition:background .16s,color .16s,transform .16s;
+            color:rgba(255,255,255,.86); font-weight:600; transition:background .16s,color .16s,transform .16s;
             border-radius:12px;
         }
-        .tool-btn:hover, .tool-btn.active { background:#f1f6f5; color:var(--green); }
+        .tool-btn:hover, .tool-btn.active { background:rgba(255,255,255,.14); color:#fff; }
         .tool-btn:active { transform:scale(.96); }
         .tool-btn .icon {
             display:grid; place-items:center; width:27px; height:27px;
             margin-bottom:4px; font-size:0;
         }
         .tool-btn .icon svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
-        .tool-btn.btn-save {
-            background:var(--orange); color:#fff; border-radius:12px;
-            margin-left:auto; width:auto; min-width:112px; padding:0 15px;
-            flex-direction:row; gap:7px; box-shadow:none;
-            font-weight:700;
-        }
-        .tool-btn.btn-save:hover { background:#e55e22; }
-        .tool-btn.btn-save .icon { margin-bottom:0; width:23px; height:23px; }
-        .tool-btn.btn-save .icon svg { width:22px; height:22px; stroke-width:1.9; }
+
 
         .panel {
             position:absolute; bottom:84px; left:12px; right:12px;
@@ -204,6 +205,9 @@
             <button id="btnReset" class="header-edit reset" title="Reset editor" aria-label="Reset editor">
                 <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="m7 7 1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>
             </button>
+            <a id="downloadBtn" class="header-save" style="display:none;" download="Bukti_Donasi.jpg" title="Simpan Bukti" aria-label="Simpan Bukti">
+                <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>
+            </a>
             <div class="status"><span class="status-dot"></span><span class="status-text">Siap digunakan</span></div>
         </div>
     </header>
@@ -278,9 +282,7 @@
         <button class="tool-btn" onclick="togglePanel('nominal')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M6 19 11.5 5h1L18 19"/><path d="M8.2 14h6.6"/></svg></span>Teks</button>
         <button class="tool-btn" onclick="togglePanel('crop')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M8 3v13a5 5 0 0 0 5 5h8M3 8h13a5 5 0 0 0 5 5v8"/></svg></span>Potong</button>
         <button class="tool-btn" onclick="togglePanel('sensor')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 4c5 0 8 8 8 8s-3 8-8 8-8-8-8-8 3-8 8-8Z"/><circle cx="12" cy="12" r="2.5"/></svg></span>Privasi</button>
-        <a id="downloadBtn" class="tool-btn btn-save" style="display:none;" download="Bukti_Donasi.jpg">
-            <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg></span>Simpan Bukti
-        </a>
+
     </div>
 
 <script>
