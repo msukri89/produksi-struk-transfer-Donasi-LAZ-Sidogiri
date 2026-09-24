@@ -88,6 +88,28 @@
             border-radius:3px;
             touch-action:none;
         }
+        #editControls {
+            position:absolute; top:14px; right:14px; z-index:80;
+            display:flex; gap:7px;
+            padding:6px;
+            background:rgba(255,255,255,.92);
+            border:1px solid rgba(229,235,233,.95);
+            border-radius:14px;
+            box-shadow:0 10px 28px rgba(24,35,33,.13);
+            backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+        }
+        .edit-btn {
+            width:38px; height:38px; border:0; border-radius:10px;
+            background:#f4f7f6; color:#5d6d69;
+            display:grid; place-items:center; cursor:pointer;
+            transition:.18s;
+        }
+        .edit-btn:active { transform:scale(.94); }
+        .edit-btn:hover { background:#edf6f4; color:var(--green); }
+        .edit-btn:disabled { opacity:.35; cursor:default; }
+        .edit-btn svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+        .edit-btn.reset { color:#c84c4c; }
+        .edit-btn.reset:hover { background:#fff0f0; color:#b23f3f; }
 
         #toast {
             position:absolute; top:78px; left:50%; transform:translateX(-50%);
@@ -190,6 +212,14 @@
 
     <!-- Area Kanvas -->
     <div id="workspace">
+        <div id="editControls">
+            <button id="btnUndo" class="edit-btn" title="Urungkan" aria-label="Urungkan">
+                <svg viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M5 12h8a7 7 0 0 1 7 7"/></svg>
+            </button>
+            <button id="btnReset" class="edit-btn reset" title="Reset" aria-label="Reset">
+                <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="m7 7 1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>
+            </button>
+        </div>
         <canvas id="canvas"></canvas>
     </div>
 
@@ -320,6 +350,95 @@
     let initCenterX = null;
     let initCenterY = null;
 
+    // --- UNDO / RESET ---
+    const history = [];
+    const MAX_HISTORY = 30;
+    let historyLock = false;
+
+    function getEditorState() {
+        return {
+            s: { ...s },
+            t: { ...t },
+            sensors: sensors.map(sensor => ({ ...sensor })),
+            cropT: document.getElementById('cropT').value,
+            cropB: document.getElementById('cropB').value,
+            cropL: document.getElementById('cropL').value,
+            cropR: document.getElementById('cropR').value,
+            nominal: document.getElementById('inputNominal').value,
+            activeObj,
+            strukSrc: imgStruk.src || '',
+            strukLoaded
+        };
+    }
+
+    function updateHistoryButtons() {
+        const btn = document.getElementById('btnUndo');
+        if (btn) btn.disabled = history.length === 0;
+    }
+
+    function recordHistory() {
+        if (historyLock) return;
+        const snapshot = getEditorState();
+        const last = history[history.length - 1];
+        if (last && JSON.stringify(last) === JSON.stringify(snapshot)) return;
+        history.push(snapshot);
+        if (history.length > MAX_HISTORY) history.shift();
+        updateHistoryButtons();
+    }
+
+    function restoreState(state) {
+        historyLock = true;
+        s = { ...state.s };
+        t = { ...state.t };
+        sensors = state.sensors.map(sensor => ({ ...sensor }));
+        document.getElementById('cropT').value = state.cropT;
+        document.getElementById('cropB').value = state.cropB;
+        document.getElementById('cropL').value = state.cropL;
+        document.getElementById('cropR').value = state.cropR;
+        document.getElementById('inputNominal').value = state.nominal;
+        activeObj = state.activeObj;
+        if (state.strukSrc) {
+            strukLoaded = true;
+            if (imgStruk.src !== state.strukSrc) imgStruk.src = state.strukSrc;
+        } else {
+            strukLoaded = false;
+            imgStruk.removeAttribute('src');
+        }
+        historyLock = false;
+        drawCanvas();
+    }
+
+    function undo() {
+        if (!history.length) return;
+        const state = history.pop();
+        restoreState(state);
+        updateHistoryButtons();
+        const toastEl = document.getElementById('toast');
+        toastEl.textContent = 'Perubahan terakhir dibatalkan';
+        toastEl.style.opacity = '1';
+        clearTimeout(window.__toastTimer);
+        window.__toastTimer = setTimeout(() => { toastEl.style.opacity = '0'; }, 1600);
+    }
+
+    function resetEditor() {
+        if (!templateLoaded) return;
+        recordHistory();
+        s = { x: canvas.width * 0.05, y: canvas.height * 0.15, w: canvas.width * 0.40, scale: 1 };
+        t = { x: canvas.width * 0.52, y: canvas.height * 0.40, size: canvas.width * 0.055 };
+        sensors = [];
+        activeObj = null;
+        strukLoaded = false;
+        imgStruk.removeAttribute('src');
+        document.getElementById('inputNominal').value = '500.000';
+        ['cropT', 'cropB', 'cropL', 'cropR'].forEach(id => document.getElementById(id).value = 0);
+        centerWorkspace();
+        drawCanvas();
+    }
+
+    document.getElementById('btnUndo').addEventListener('click', undo);
+    document.getElementById('btnReset').addEventListener('click', resetEditor);
+    updateHistoryButtons();
+
     // --- AUTO-DETECT TEMPLATE ---
     function checkTemplateExists(index) {
         return new Promise((resolve) => {
@@ -350,21 +469,34 @@
     scanTemplates();
 
     document.getElementById('selectTemplate').addEventListener('change', function(e) {
+        recordHistory();
         if (e.target.value === 'manual') document.getElementById('uploadTemplate').style.display = 'block';
         else { document.getElementById('uploadTemplate').style.display = 'none'; imgTemplate.src = e.target.value; }
     });
     document.getElementById('uploadTemplate').addEventListener('change', e => { if(e.target.files[0]) imgTemplate.src = URL.createObjectURL(e.target.files[0]); });
-    document.getElementById('uploadStruk').addEventListener('change', e => { if(e.target.files[0]) imgStruk.src = URL.createObjectURL(e.target.files[0]); closePanels(); });
+    document.getElementById('uploadStruk').addEventListener('change', e => {
+        if(e.target.files[0]) {
+            recordHistory();
+            imgStruk.src = URL.createObjectURL(e.target.files[0]);
+        }
+        closePanels();
+    });
     document.getElementById('inputNominal').addEventListener('input', drawCanvas);
-    ['cropT', 'cropB', 'cropL', 'cropR'].forEach(id => { document.getElementById(id).addEventListener('input', drawCanvas); });
+    document.getElementById('inputNominal').addEventListener('change', recordHistory);
+    ['cropT', 'cropB', 'cropL', 'cropR'].forEach(id => {
+        document.getElementById(id).addEventListener('pointerdown', recordHistory);
+        document.getElementById(id).addEventListener('input', drawCanvas);
+    });
 
     document.getElementById('btnAddSensor').addEventListener('click', () => {
+        recordHistory();
         sensors.push({ x: s.x + 20, y: s.y + 20, w: 120, h: 40 });
         activeObj = 'sensor_' + (sensors.length - 1);
         drawCanvas(); closePanels();
     });
     document.getElementById('btnDelSensor').addEventListener('click', () => {
         if (activeObj && activeObj.startsWith('sensor_')) {
+            recordHistory();
             sensors.splice(parseInt(activeObj.split('_')[1]), 1);
             activeObj = null; drawCanvas(); closePanels();
         }
@@ -508,7 +640,7 @@
 
     function handleStart(e) {
         if (e.touches && e.touches.length === 2) return; // Tangani pinch terpisah
-        if (e.target.closest('.panel') || e.target.closest('#toolbar')) return; // Abaikan klik di menu
+        if (e.target.closest('.panel') || e.target.closest('#toolbar') || e.target.closest('#editControls')) return; // Abaikan klik di menu
         
         let mouse = getMousePos(e);
         let hit = getHitRegion(mouse);
@@ -518,9 +650,11 @@
 
         if (hit === 'resize_handle') {
             e.preventDefault();
+            recordHistory();
             isResizingObj = true;
         } else if (hit) {
             e.preventDefault();
+            recordHistory();
             activeObj = hit;
             isDraggingObj = true;
         } else {
