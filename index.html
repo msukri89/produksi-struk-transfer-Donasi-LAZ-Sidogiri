@@ -74,6 +74,17 @@
             padding:7px 10px; border-radius:999px;
         }
         .status-dot { width:7px; height:7px; border-radius:50%; background:#28a46a; box-shadow:0 0 0 3px rgba(40,164,106,.12); }
+        .header-actions { display:flex; align-items:center; gap:7px; }
+        .header-edit {
+            width:36px; height:36px; border:1px solid #dfe8e5; border-radius:10px;
+            background:#f7faf9; color:#5d6d69; display:grid; place-items:center;
+            cursor:pointer; padding:0;
+        }
+        .header-edit:active { transform:scale(.95); }
+        .header-edit:disabled { opacity:.45; }
+        .header-edit.reset { color:#c84c4c; }
+        .header-edit svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+        .header-edit-label { display:none; }
 
         #workspace {
             position:absolute; top:64px; left:0; right:0; bottom:78px;
@@ -88,28 +99,7 @@
             border-radius:3px;
             touch-action:none;
         }
-        #editControls {
-            position:absolute; top:14px; right:14px; z-index:80;
-            display:flex; gap:7px;
-            padding:6px;
-            background:rgba(255,255,255,.92);
-            border:1px solid rgba(229,235,233,.95);
-            border-radius:14px;
-            box-shadow:0 10px 28px rgba(24,35,33,.13);
-            backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
-        }
-        .edit-btn {
-            width:38px; height:38px; border:0; border-radius:10px;
-            background:#f4f7f6; color:#5d6d69;
-            display:grid; place-items:center; cursor:pointer;
-            transition:.18s;
-        }
-        .edit-btn:active { transform:scale(.94); }
-        .edit-btn:hover { background:#edf6f4; color:var(--green); }
-        .edit-btn:disabled { opacity:.35; cursor:default; }
-        .edit-btn svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-        .edit-btn.reset { color:#c84c4c; }
-        .edit-btn.reset:hover { background:#fff0f0; color:#b23f3f; }
+
 
         #toast {
             position:absolute; top:78px; left:50%; transform:translateX(-50%);
@@ -204,7 +194,15 @@
                 <div class="brand-sub">Produksi Konten • LAZ Sidogiri</div>
             </div>
         </div>
-        <div class="status"><span class="status-dot"></span><span class="status-text">Siap digunakan</span></div>
+        <div class="header-actions">
+            <button id="btnUndo" class="header-edit" title="Urungkan perubahan" aria-label="Urungkan perubahan" disabled>
+                <svg viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M5 12h8a7 7 0 0 1 7 7"/></svg>
+            </button>
+            <button id="btnReset" class="header-edit reset" title="Reset editor" aria-label="Reset editor">
+                <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="m7 7 1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>
+            </button>
+            <div class="status"><span class="status-dot"></span><span class="status-text">Siap digunakan</span></div>
+        </div>
     </header>
 
     <!-- Indikator Panduan -->
@@ -212,14 +210,6 @@
 
     <!-- Area Kanvas -->
     <div id="workspace">
-        <div id="editControls">
-            <button id="btnUndo" class="edit-btn" title="Urungkan" aria-label="Urungkan">
-                <svg viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M5 12h8a7 7 0 0 1 7 7"/></svg>
-            </button>
-            <button id="btnReset" class="edit-btn reset" title="Reset" aria-label="Reset">
-                <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="m7 7 1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>
-            </button>
-        </div>
         <canvas id="canvas"></canvas>
     </div>
 
