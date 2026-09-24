@@ -6,7 +6,7 @@
     <title>Generator Bukti Donasi Pro</title>
     
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e5d59">
+    <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <style>
@@ -17,93 +17,145 @@
             font-style: normal;
         }
 
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; overscroll-behavior-y: contain; user-select: none; }
-        .app-container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h2 { color: #1e5d59; text-align: center; margin-top: 0; font-size: 22px; }
-        .control-group { border: 1px solid #e1e8e7; padding: 15px; margin-bottom: 15px; border-radius: 8px; background-color: #fafcfc; }
-        .control-group h3 { margin-top: 0; margin-bottom: 12px; font-size: 15px; color: #2c3e50; border-bottom: 2px solid #e1e8e7; padding-bottom: 5px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
-        input[type="file"], input[type="text"], select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; background-color: white; }
-        input[type="range"] { width: 100%; accent-color: #1e5d59; }
+        /* Reset & Layout Utama */
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #e9ecef; user-select: none; -webkit-user-select: none; }
         
-        .btn-action { background-color: #4CAF50; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; }
-        .btn-danger { background-color: #f44336; }
+        /* Area Kerja (Kanvas) */
+        #workspace { position: absolute; top: 0; left: 0; right: 0; bottom: 70px; overflow: hidden; touch-action: none; background-image: radial-gradient(#d1d1d1 1px, transparent 1px); background-size: 20px 20px; }
+        canvas { position: absolute; top: 0; left: 0; transform-origin: 0 0; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         
-        #canvas-container { position: relative; width: 100%; max-width: 100%; overflow: hidden; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; background-color: #eee; touch-action: none; }
-        canvas { display: block; width: 100%; height: auto; }
+        /* Toolbar Bawah ala Canva */
+        #toolbar { position: absolute; bottom: 0; left: 0; right: 0; height: 70px; background: white; display: flex; overflow-x: auto; white-space: nowrap; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); padding: 5px 10px; box-sizing: border-box; align-items: center; z-index: 100; }
+        #toolbar::-webkit-scrollbar { display: none; }
+        .tool-btn { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 65px; height: 100%; border: none; background: transparent; font-size: 11px; cursor: pointer; color: #555; font-weight: 600; transition: 0.2s; border-radius: 8px; }
+        .tool-btn:hover, .tool-btn.active { background: #f0f5f4; color: #1e5d59; }
+        .tool-btn span.icon { font-size: 22px; margin-bottom: 4px; }
+
+        /* Panel Menu Melayang (Popup) */
+        .panel { position: absolute; bottom: 85px; left: 10px; right: 10px; background: white; padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; z-index: 99; transform: translateY(10px); opacity: 0; transition: all 0.3s ease; max-height: 60vh; overflow-y: auto; }
+        .panel.show { display: block; transform: translateY(0); opacity: 1; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .panel-header h3 { margin: 0; font-size: 16px; color: #1e5d59; }
+        .close-btn { background: none; border: none; font-size: 20px; color: #999; cursor: pointer; padding: 0; line-height: 1; }
+
+        /* Elemen Input dalam Panel */
+        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #444; }
+        input[type="file"], input[type="text"], select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; background-color: #fafafa; outline: none; }
+        input[type="text"]:focus, select:focus { border-color: #1e5d59; }
+        input[type="range"] { width: 100%; accent-color: #1e5d59; margin-bottom: 15px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         
-        .btn-download { display: none; width: 100%; background: #f26522; color: white; border: none; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; text-align: center; text-decoration: none; margin-top: 15px; box-sizing: border-box; transition: 0.3s; }
-        .btn-download:hover { background: #d95517; }
-        .instructions { font-size: 12px; color: #666; margin-top: 5px; text-align: center; line-height: 1.5; }
+        .btn-action { background-color: #1e5d59; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 10px; font-size: 14px; }
+        .btn-danger { background-color: #ff4757; }
+        
+        /* Tombol Spesial Simpan */
+        .tool-btn.btn-save { background: #f26522; color: white; border-radius: 8px; margin-left: auto; width: auto; padding: 0 20px; flex-direction: row; gap: 8px; }
+        .tool-btn.btn-save:hover { background: #d95517; }
+        .tool-btn.btn-save span.icon { margin-bottom: 0; font-size: 18px; }
+
+        /* Indikator Panduan Singkat */
+        #toast { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; pointer-events: none; opacity: 1; transition: opacity 1s; z-index: 200; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <h2>Buat Bukti Donasi</h2>
+    <!-- Indikator Panduan -->
+    <div id="toast">Cubit latar untuk Zoom & Geser</div>
 
-    <div class="control-group">
-        <label>1. Pilih Template Dasar</label>
+    <!-- Area Kanvas -->
+    <div id="workspace">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <!-- Panel 1: Template -->
+    <div id="panel-template" class="panel">
+        <div class="panel-header">
+            <h3>Pilih Template</h3>
+            <button class="close-btn" onclick="closePanels()">×</button>
+        </div>
         <select id="selectTemplate">
             <option value="loading">Memindai template...</option>
         </select>
-        <!-- Fitur upload manual disembunyikan secara default -->
-        <input type="file" id="uploadTemplate" accept="image/*" style="display: none;">
-        
-        <label>2. Upload Struk Baru</label>
-        <input type="file" id="uploadStruk" accept="image/*">
+        <input type="file" id="uploadTemplate" accept="image/*" style="display: none; margin-top: 10px;">
+    </div>
 
-        <label>3. Nominal Baru (Contoh: 500.000)</label>
+    <!-- Panel 2: Struk -->
+    <div id="panel-struk" class="panel">
+        <div class="panel-header">
+            <h3>Upload Bukti Transfer</h3>
+            <button class="close-btn" onclick="closePanels()">×</button>
+        </div>
+        <input type="file" id="uploadStruk" accept="image/*">
+        <p style="font-size: 12px; color: #666; margin-top: 0;">*Setelah upload, ketuk gambar struk di kanvas untuk mengatur posisi dan ukurannya.</p>
+    </div>
+
+    <!-- Panel 3: Nominal -->
+    <div id="panel-nominal" class="panel">
+        <div class="panel-header">
+            <h3>Edit Nominal</h3>
+            <button class="close-btn" onclick="closePanels()">×</button>
+        </div>
         <input type="text" id="inputNominal" value="500.000">
     </div>
 
-    <!-- FITUR CROP (PEMOTONGAN STRUK) -->
-    <div class="control-group">
-        <h3>Alat Potong Struk (Crop)</h3>
+    <!-- Panel 4: Crop -->
+    <div id="panel-crop" class="panel">
+        <div class="panel-header">
+            <h3>Potong Struk</h3>
+            <button class="close-btn" onclick="closePanels()">×</button>
+        </div>
         <div class="grid-2">
-            <div>
-                <label>Potong Atas</label>
-                <input type="range" id="cropT" min="0" max="50" value="0">
-            </div>
-            <div>
-                <label>Potong Bawah</label>
-                <input type="range" id="cropB" min="0" max="50" value="0">
-            </div>
-            <div>
-                <label>Potong Kiri</label>
-                <input type="range" id="cropL" min="0" max="50" value="0">
-            </div>
-            <div>
-                <label>Potong Kanan</label>
-                <input type="range" id="cropR" min="0" max="50" value="0">
-            </div>
+            <div><label>Atas</label><input type="range" id="cropT" min="0" max="50" value="0"></div>
+            <div><label>Bawah</label><input type="range" id="cropB" min="0" max="50" value="0"></div>
+            <div><label>Kiri</label><input type="range" id="cropL" min="0" max="50" value="0"></div>
+            <div><label>Kanan</label><input type="range" id="cropR" min="0" max="50" value="0"></div>
         </div>
     </div>
 
-    <!-- FITUR SENSOR / BLUR -->
-    <div class="control-group">
-        <h3>Privasi (Sensor Data)</h3>
-        <button id="btnAddSensor" class="btn-action">+ Tambah Area Sensor (Blur)</button>
-        <button id="btnDelSensor" class="btn-action btn-danger" style="display:none;">- Hapus Sensor yang Dipilih</button>
+    <!-- Panel 5: Sensor/Blur -->
+    <div id="panel-sensor" class="panel">
+        <div class="panel-header">
+            <h3>Sensor Privasi</h3>
+            <button class="close-btn" onclick="closePanels()">×</button>
+        </div>
+        <button id="btnAddSensor" class="btn-action">+ Tambah Area Sensor</button>
+        <button id="btnDelSensor" class="btn-action btn-danger" style="display:none;">- Hapus Sensor Terpilih</button>
     </div>
 
-    <p class="instructions"><b>Ketuk objek</b> (struk, teks, atau kotak sensor) untuk mengeditnya.<br>Geser kotak atau <b>tarik titik biru di pojok kanan bawah</b> untuk mengubah ukuran.</p>
-
-    <div id="canvas-container">
-        <canvas id="canvas"></canvas>
+    <!-- Toolbar Bawah -->
+    <div id="toolbar">
+        <button class="tool-btn" onclick="togglePanel('template')"><span class="icon">🖼️</span>Template</button>
+        <button class="tool-btn" onclick="togglePanel('struk')"><span class="icon">🧾</span>Struk</button>
+        <button class="tool-btn" onclick="togglePanel('nominal')"><span class="icon">✏️</span>Teks</button>
+        <button class="tool-btn" onclick="togglePanel('crop')"><span class="icon">✂️</span>Potong</button>
+        <button class="tool-btn" onclick="togglePanel('sensor')"><span class="icon">💧</span>Blur</button>
+        <a id="downloadBtn" class="tool-btn btn-save" style="display:none;" download="Bukti_Donasi.jpg">
+            <span class="icon">⬇️</span>Simpan
+        </a>
     </div>
-    
-    <a id="downloadBtn" class="btn-download" download="Bukti_Donasi_Final.jpg">Download Gambar</a>
-</div>
 
 <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js');
-        });
+    // --- 1. PENGATURAN UI (PANEL & TOOLBAR) ---
+    function closePanels() {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('show'));
+        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
     }
 
+    function togglePanel(panelId) {
+        const panel = document.getElementById('panel-' + panelId);
+        const isOpen = panel.classList.contains('show');
+        closePanels();
+        if (!isOpen) {
+            panel.classList.add('show');
+            // Menandai tombol aktif (menggunakan urutan tombol)
+            event.currentTarget.classList.add('active');
+        }
+    }
+
+    // Hilangkan toast panduan setelah 4 detik
+    setTimeout(() => { document.getElementById('toast').style.opacity = '0'; }, 4000);
+
+    // --- 2. LOGIKA KANVAS & OBJEK ---
     document.fonts.load('10pt "Gilroy-Bold"').then(() => { drawCanvas(); });
 
     const canvas = document.getElementById('canvas');
@@ -114,21 +166,35 @@
     
     let templateLoaded = false;
     let strukLoaded = false;
-    let scaleCanvas = 1; 
     
+    // Objek Data
     let s = { x: 50, y: 200, w: 300, scale: 1 }; 
     let t = { x: 500, y: 400, size: 45 };
-    
     let sensors = [];
+    
+    // Interaksi Objek
     let activeObj = null; 
-    let isDragging = false;
-    let isResizing = false;
-    let startMouseX, startMouseY;
-    let initialPinchDistance = null;
-    let initialScaleSize = 1;
-    const handleHitRadius = 35; 
+    let isDraggingObj = false;
+    let isResizingObj = false;
+    const handleHitRadius = 40; 
+    
+    // Interaksi Workspace (Latar/Kanvas)
+    let wpZoom = 1;
+    let wpPanX = 0;
+    let wpPanY = 0;
+    let isPanningWp = false;
+    let lastClientX, lastClientY;
+    
+    // Multi-touch State
+    let initialPinchDist = null;
+    let initialObjScale = null;
+    let initWpZoom = null;
+    let initPanX = null;
+    let initPanY = null;
+    let initCenterX = null;
+    let initCenterY = null;
 
-    // --- FITUR AUTO-DETECT TEMPLATE GITHUB ---
+    // --- AUTO-DETECT TEMPLATE ---
     function checkTemplateExists(index) {
         return new Promise((resolve) => {
             let img = new Image();
@@ -141,379 +207,311 @@
     async function scanTemplates() {
         let index = 1;
         let options = '';
-        
         while (true) {
-            let exists = await checkTemplateExists(index);
-            if (exists) {
+            if (await checkTemplateExists(index)) {
                 options += `<option value="template_${index}.png">Template ${index}</option>`;
                 index++;
-            } else {
-                break; // Berhenti mencari jika file nomor berikutnya tidak ada
-            }
+            } else { break; }
         }
-        
-        if (options === '') {
-            options = `<option value="" disabled>Belum ada template di server</option>`;
-        }
-        
+        if (options === '') options = `<option value="" disabled>Belum ada template</option>`;
         options += `<option value="manual">+ Upload Template Manual...</option>`;
         
         const selectEl = document.getElementById('selectTemplate');
         selectEl.innerHTML = options;
-        
-        // Auto-pilih template pertama jika ada
-        if (index > 1) {
-            selectEl.value = 'template_1.png';
-            imgTemplate.src = 'template_1.png';
-        } else {
-            selectEl.value = 'manual';
-            document.getElementById('uploadTemplate').style.display = 'block';
-        }
+        if (index > 1) { selectEl.value = 'template_1.png'; imgTemplate.src = 'template_1.png'; } 
+        else { selectEl.value = 'manual'; document.getElementById('uploadTemplate').style.display = 'block'; }
     }
-    
-    // Jalankan pemindaian saat aplikasi dibuka
     scanTemplates();
 
-    // Logika ketika pengguna mengubah pilihan di dropdown template
     document.getElementById('selectTemplate').addEventListener('change', function(e) {
-        if (e.target.value === 'manual') {
-            document.getElementById('uploadTemplate').style.display = 'block';
-        } else {
-            document.getElementById('uploadTemplate').style.display = 'none';
-            imgTemplate.src = e.target.value;
-        }
+        if (e.target.value === 'manual') document.getElementById('uploadTemplate').style.display = 'block';
+        else { document.getElementById('uploadTemplate').style.display = 'none'; imgTemplate.src = e.target.value; }
     });
-
-    // Upload template manual (fallback)
-    document.getElementById('uploadTemplate').addEventListener('change', function(e) {
-        if(e.target.files[0]) imgTemplate.src = URL.createObjectURL(e.target.files[0]);
-    });
-
-    // --- KODE UTAMA LAINNYA TETAP SAMA ---
-
-    document.getElementById('uploadStruk').addEventListener('change', function(e) {
-        if(e.target.files[0]) imgStruk.src = URL.createObjectURL(e.target.files[0]);
-    });
+    document.getElementById('uploadTemplate').addEventListener('change', e => { if(e.target.files[0]) imgTemplate.src = URL.createObjectURL(e.target.files[0]); });
+    document.getElementById('uploadStruk').addEventListener('change', e => { if(e.target.files[0]) imgStruk.src = URL.createObjectURL(e.target.files[0]); closePanels(); });
     document.getElementById('inputNominal').addEventListener('input', drawCanvas);
-
-    ['cropT', 'cropB', 'cropL', 'cropR'].forEach(id => {
-        document.getElementById(id).addEventListener('input', drawCanvas);
-    });
+    ['cropT', 'cropB', 'cropL', 'cropR'].forEach(id => { document.getElementById(id).addEventListener('input', drawCanvas); });
 
     document.getElementById('btnAddSensor').addEventListener('click', () => {
         sensors.push({ x: s.x + 20, y: s.y + 20, w: 120, h: 40 });
         activeObj = 'sensor_' + (sensors.length - 1);
-        drawCanvas();
+        drawCanvas(); closePanels();
     });
-
     document.getElementById('btnDelSensor').addEventListener('click', () => {
         if (activeObj && activeObj.startsWith('sensor_')) {
-            let idx = parseInt(activeObj.split('_')[1]);
-            sensors.splice(idx, 1);
-            activeObj = null;
-            drawCanvas();
+            sensors.splice(parseInt(activeObj.split('_')[1]), 1);
+            activeObj = null; drawCanvas(); closePanels();
         }
     });
 
-    document.addEventListener('click', (e) => {
-        if (e.target.id !== 'canvas' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT') {
-            activeObj = null;
-            drawCanvas();
-        }
-    });
+    // Menutup panel jika area workspace diklik
+    document.getElementById('workspace').addEventListener('mousedown', closePanels);
+    document.getElementById('workspace').addEventListener('touchstart', closePanels, {passive: true});
+
+    // --- MENGATUR KANVAS & WORKSPACE ---
+    function centerWorkspace() {
+        if (!templateLoaded) return;
+        const ws = document.getElementById('workspace');
+        // Fit gambar ke layar dengan margin 10%
+        const ratio = Math.min(ws.clientWidth / canvas.width, ws.clientHeight / canvas.height) * 0.95;
+        wpZoom = ratio;
+        wpPanX = (ws.clientWidth - (canvas.width * wpZoom)) / 2;
+        wpPanY = (ws.clientHeight - (canvas.height * wpZoom)) / 2;
+        applyWorkspaceTransform();
+    }
+
+    function applyWorkspaceTransform() {
+        // Menggunakan CSS transform untuk Zoom dan Geser ruang kerja
+        canvas.style.transform = `translate(${wpPanX}px, ${wpPanY}px) scale(${wpZoom})`;
+    }
 
     imgTemplate.onload = function() {
         templateLoaded = true;
         canvas.width = imgTemplate.width;
         canvas.height = imgTemplate.height;
-        updateScaleCanvas();
-        
-        t.x = canvas.width * 0.52;
-        t.y = canvas.height * 0.40;
-        t.size = canvas.width * 0.055;
-
-        s.x = canvas.width * 0.05;
-        s.y = canvas.height * 0.15;
+        t.x = canvas.width * 0.52; t.y = canvas.height * 0.40; t.size = canvas.width * 0.055;
+        s.x = canvas.width * 0.05; s.y = canvas.height * 0.15;
+        centerWorkspace();
         drawCanvas();
     };
 
     imgStruk.onload = function() {
         strukLoaded = true;
-        s.w = (canvas.width || 1000) * 0.40; 
-        
-        document.getElementById('cropT').value = 0;
-        document.getElementById('cropB').value = 0;
-        document.getElementById('cropL').value = 0;
-        document.getElementById('cropR').value = 0;
-        
+        s.w = canvas.width * 0.40; 
+        ['cropT', 'cropB', 'cropL', 'cropR'].forEach(id => document.getElementById(id).value = 0);
         drawCanvas();
     };
 
+    // --- MENGGAMBAR ELEMEN ---
     function getBoundingBox(type) {
         if (type === 'struk' && strukLoaded) {
-            let ct = document.getElementById('cropT').value / 100;
-            let cb = document.getElementById('cropB').value / 100;
-            let cl = document.getElementById('cropL').value / 100;
-            let cr = document.getElementById('cropR').value / 100;
-            let sw = imgStruk.width * (1 - cl - cr);
-            let sh = imgStruk.height * (1 - ct - cb);
+            let ct = document.getElementById('cropT').value / 100, cb = document.getElementById('cropB').value / 100;
+            let cl = document.getElementById('cropL').value / 100, cr = document.getElementById('cropR').value / 100;
+            let sw = imgStruk.width * (1 - cl - cr), sh = imgStruk.height * (1 - ct - cb);
             let displayW = s.w * s.scale;
-            let displayH = displayW * (sh / sw);
-            return { x: s.x, y: s.y, w: displayW, h: displayH };
+            return { x: s.x, y: s.y, w: displayW, h: displayW * (sh / sw) };
         } else if (type === 'teks') {
-            const nominal = document.getElementById('inputNominal').value;
             ctx.font = `${t.size}px 'Gilroy-Bold', Arial, sans-serif`;
-            let metrics = ctx.measureText("Rp. " + nominal);
-            let boxHeight = t.size * 1.2;
-            let boxY = t.y - (t.size * 0.9);
-            return { x: t.x, y: boxY, w: metrics.width, h: boxHeight };
-        } else if (type.startsWith('sensor_')) {
-            let idx = parseInt(type.split('_')[1]);
-            return sensors[idx];
+            return { x: t.x, y: t.y - (t.size * 0.9), w: ctx.measureText("Rp. " + document.getElementById('inputNominal').value).width, h: t.size * 1.2 };
+        } else if (type && type.startsWith('sensor_')) {
+            return sensors[parseInt(type.split('_')[1])];
         }
         return null;
     }
 
     function drawCanvas() {
         if (!templateLoaded) return;
-        
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
         ctx.drawImage(imgTemplate, 0, 0, canvas.width, canvas.height);
 
         if (strukLoaded) {
-            let ct = document.getElementById('cropT').value / 100;
-            let cb = document.getElementById('cropB').value / 100;
-            let cl = document.getElementById('cropL').value / 100;
-            let cr = document.getElementById('cropR').value / 100;
-
-            let sourceX = imgStruk.width * cl;
-            let sourceY = imgStruk.height * ct;
-            let sourceW = imgStruk.width * (1 - cl - cr);
-            let sourceH = imgStruk.height * (1 - ct - cb);
-
-            let displayW = s.w * s.scale;
-            let displayH = displayW * (sourceH / sourceW);
+            let ct = document.getElementById('cropT').value / 100, cb = document.getElementById('cropB').value / 100;
+            let cl = document.getElementById('cropL').value / 100, cr = document.getElementById('cropR').value / 100;
+            let sW = imgStruk.width * (1 - cl - cr), sH = imgStruk.height * (1 - ct - cb);
+            let dW = s.w * s.scale, dH = dW * (sH / sW);
 
             ctx.save();
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-            ctx.shadowBlur = 20;
-            ctx.shadowOffsetX = 5;
-            ctx.shadowOffsetY = 10;
-            ctx.drawImage(imgStruk, sourceX, sourceY, sourceW, sourceH, s.x, s.y, displayW, displayH);
+            ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 20; ctx.shadowOffsetX = 5; ctx.shadowOffsetY = 10;
+            ctx.drawImage(imgStruk, imgStruk.width * cl, imgStruk.height * ct, sW, sH, s.x, s.y, dW, dH);
             ctx.restore();
         }
 
-        const nominal = document.getElementById('inputNominal').value;
         ctx.font = `${t.size}px 'Gilroy-Bold', Arial, sans-serif`;
         ctx.fillStyle = "white";
-        ctx.fillText("Rp. " + nominal, t.x, t.y);
+        ctx.fillText("Rp. " + document.getElementById('inputNominal').value, t.x, t.y);
 
         sensors.forEach((sensor) => {
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(sensor.x, sensor.y, sensor.w, sensor.h);
-            ctx.clip(); 
-            
-            ctx.filter = 'blur(12px)';
-            ctx.drawImage(canvas, 0, 0);
-            
-            ctx.filter = 'none';
-            ctx.fillStyle = 'rgba(200, 200, 200, 0.4)';
-            ctx.fill();
-            ctx.restore();
+            ctx.save(); ctx.beginPath(); ctx.rect(sensor.x, sensor.y, sensor.w, sensor.h); ctx.clip(); 
+            ctx.filter = 'blur(12px)'; ctx.drawImage(canvas, 0, 0);
+            ctx.filter = 'none'; ctx.fillStyle = 'rgba(200,200,200,0.4)'; ctx.fill(); ctx.restore();
         });
 
         if (activeObj) {
             let box = getBoundingBox(activeObj);
             if (box) {
                 ctx.save();
-                ctx.strokeStyle = '#2196F3'; 
-                ctx.lineWidth = 3 / scaleCanvas; 
-                ctx.setLineDash([10 / scaleCanvas, 10 / scaleCanvas]);
+                ctx.strokeStyle = '#2196F3'; ctx.lineWidth = 4 / wpZoom; ctx.setLineDash([12 / wpZoom, 12 / wpZoom]);
                 ctx.strokeRect(box.x, box.y, box.w, box.h);
-
-                ctx.fillStyle = '#2196F3';
-                ctx.setLineDash([]);
-                let handleSize = 16 / scaleCanvas;
-                ctx.fillRect(box.x + box.w - handleSize/2, box.y + box.h - handleSize/2, handleSize, handleSize);
+                ctx.fillStyle = '#2196F3'; ctx.setLineDash([]);
+                let hSize = 20 / wpZoom;
+                ctx.fillRect(box.x + box.w - hSize/2, box.y + box.h - hSize/2, hSize, hSize);
                 ctx.restore();
             }
         }
 
         document.getElementById('btnDelSensor').style.display = (activeObj && activeObj.startsWith('sensor_')) ? 'block' : 'none';
-        document.getElementById('downloadBtn').style.display = "block";
-        document.getElementById('downloadBtn').href = canvas.toDataURL("image/jpeg", 0.95);
+        
+        const dlBtn = document.getElementById('downloadBtn');
+        dlBtn.style.display = "flex";
+        dlBtn.href = canvas.toDataURL("image/jpeg", 0.95);
     }
 
-    function updateScaleCanvas() { scaleCanvas = canvas.getBoundingClientRect().width / canvas.width; }
-    window.addEventListener('resize', updateScaleCanvas);
-
+    // --- SISTEM GESTUR & SENTUHAN (CANVA STYLE) ---
     function getMousePos(e) {
-        let rect = canvas.getBoundingClientRect();
-        let clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        let clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: (clientX - rect.left) / scaleCanvas, y: (clientY - rect.top) / scaleCanvas };
+        let cx = e.touches ? e.touches[0].clientX : e.clientX;
+        let cy = e.touches ? e.touches[0].clientY : e.clientY;
+        // Konversi koordinat layar asli ke koordinat dalam kanvas (memperhitungkan wpZoom dan wpPan)
+        return { x: (cx - wpPanX) / wpZoom, y: (cy - wpPanY) / wpZoom };
     }
 
     function getHitRegion(mouse) {
         if (activeObj) {
             let box = getBoundingBox(activeObj);
             if (box) {
-                let hx = box.x + box.w;
-                let hy = box.y + box.h;
-                let hitArea = handleHitRadius / scaleCanvas;
-                if (Math.abs(mouse.x - hx) <= hitArea && Math.abs(mouse.y - hy) <= hitArea) return 'resize_handle';
+                let hitArea = handleHitRadius / wpZoom;
+                if (Math.abs(mouse.x - (box.x + box.w)) <= hitArea && Math.abs(mouse.y - (box.y + box.h)) <= hitArea) return 'resize_handle';
             }
         }
-
         for (let i = sensors.length - 1; i >= 0; i--) {
-            let sBox = sensors[i];
-            if (mouse.x >= sBox.x && mouse.x <= sBox.x + sBox.w && mouse.y >= sBox.y && mouse.y <= sBox.y + sBox.h) {
-                return 'sensor_' + i;
-            }
+            let b = sensors[i];
+            if (mouse.x >= b.x && mouse.x <= b.x + b.w && mouse.y >= b.y && mouse.y <= b.y + b.h) return 'sensor_' + i;
         }
-
-        let tBox = getBoundingBox('teks');
-        if (tBox && mouse.x >= tBox.x && mouse.x <= tBox.x + tBox.w && mouse.y >= tBox.y && mouse.y <= tBox.y + tBox.h) return 'teks';
-
-        let sBox = getBoundingBox('struk');
-        if (sBox && mouse.x >= sBox.x && mouse.x <= sBox.x + sBox.w && mouse.y >= sBox.y && mouse.y <= sBox.y + sBox.h) return 'struk';
-
+        let tB = getBoundingBox('teks');
+        if (tB && mouse.x >= tB.x && mouse.x <= tB.x + tB.w && mouse.y >= tB.y && mouse.y <= tB.y + tB.h) return 'teks';
+        
+        let sB = getBoundingBox('struk');
+        if (sB && mouse.x >= sB.x && mouse.x <= sB.x + sB.w && mouse.y >= sB.y && mouse.y <= sB.y + sB.h) return 'struk';
         return null;
     }
 
-    function startDrag(e) {
-        if(e.touches && e.touches.length === 2) return; 
-        updateScaleCanvas();
+    const ws = document.getElementById('workspace');
+
+    function handleStart(e) {
+        if (e.touches && e.touches.length === 2) return; // Tangani pinch terpisah
+        if (e.target.closest('.panel') || e.target.closest('#toolbar')) return; // Abaikan klik di menu
+        
         let mouse = getMousePos(e);
         let hit = getHitRegion(mouse);
 
+        let cx = e.touches ? e.touches[0].clientX : e.clientX;
+        let cy = e.touches ? e.touches[0].clientY : e.clientY;
+
         if (hit === 'resize_handle') {
-            e.preventDefault();
-            isResizing = true;
-            canvas.style.cursor = 'nwse-resize';
+            e.preventDefault(); isResizingObj = true;
         } else if (hit) {
-            e.preventDefault();
-            activeObj = hit;
-            isDragging = true;
-            canvas.style.cursor = 'grabbing';
+            e.preventDefault(); activeObj = hit; isDraggingObj = true;
         } else {
-            activeObj = null; 
+            // Jika klik area kosong, deselect objek dan bersiap menggeser latar
+            activeObj = null; isPanningWp = true;
+            lastClientX = cx; lastClientY = cy;
+            ws.style.cursor = 'grab';
         }
 
         if (hit) {
-            startMouseX = mouse.x;
-            startMouseY = mouse.y;
-            if (activeObj === 'struk') initialScaleSize = s.scale;
-            if (activeObj === 'teks') initialScaleSize = t.size;
+            startMouseX = mouse.x; startMouseY = mouse.y;
+            if (activeObj === 'struk') initialObjScale = s.scale;
+            if (activeObj === 'teks') initialObjScale = t.size;
         }
         drawCanvas();
     }
 
-    function drag(e) {
+    function handleMove(e) {
         if (e.touches && e.touches.length === 2) return;
         
-        if (isDragging && activeObj) {
+        let cx = e.touches ? e.touches[0].clientX : e.clientX;
+        let cy = e.touches ? e.touches[0].clientY : e.clientY;
+
+        if (isPanningWp) {
+            e.preventDefault();
+            wpPanX += cx - lastClientX;
+            wpPanY += cy - lastClientY;
+            lastClientX = cx; lastClientY = cy;
+            applyWorkspaceTransform();
+        } 
+        else if (isDraggingObj && activeObj) {
             e.preventDefault();
             let mouse = getMousePos(e);
-            let dx = mouse.x - startMouseX;
-            let dy = mouse.y - startMouseY;
-
+            let dx = mouse.x - startMouseX; let dy = mouse.y - startMouseY;
             if (activeObj === 'struk') { s.x += dx; s.y += dy; } 
             else if (activeObj === 'teks') { t.x += dx; t.y += dy; }
-            else if (activeObj.startsWith('sensor_')) {
-                let idx = parseInt(activeObj.split('_')[1]);
-                sensors[idx].x += dx;
-                sensors[idx].y += dy;
-            }
-            
-            startMouseX = mouse.x;
-            startMouseY = mouse.y;
+            else if (activeObj.startsWith('sensor_')) { let id = parseInt(activeObj.split('_')[1]); sensors[id].x += dx; sensors[id].y += dy; }
+            startMouseX = mouse.x; startMouseY = mouse.y;
             drawCanvas();
-
-        } else if (isResizing && activeObj) {
+        } 
+        else if (isResizingObj && activeObj) {
             e.preventDefault();
             let mouse = getMousePos(e);
-            
-            if (activeObj === 'struk') {
-                let newWidth = mouse.x - s.x;
-                if (newWidth > 50) s.scale = newWidth / s.w; 
-            } else if (activeObj === 'teks') {
-                let dx = mouse.x - startMouseX;
-                t.size = initialScaleSize + (dx * 0.15); 
-                if (t.size < 10) t.size = 10; 
-            } else if (activeObj.startsWith('sensor_')) {
-                let idx = parseInt(activeObj.split('_')[1]);
-                sensors[idx].w = mouse.x - sensors[idx].x;
-                sensors[idx].h = mouse.y - sensors[idx].y;
-                if (sensors[idx].w < 20) sensors[idx].w = 20; 
-                if (sensors[idx].h < 20) sensors[idx].h = 20;
+            if (activeObj === 'struk') { let nw = mouse.x - s.x; if (nw > 50) s.scale = nw / s.w; } 
+            else if (activeObj === 'teks') { t.size = initialObjScale + ((mouse.x - startMouseX) * 0.15); if (t.size < 10) t.size = 10; } 
+            else if (activeObj.startsWith('sensor_')) {
+                let id = parseInt(activeObj.split('_')[1]);
+                sensors[id].w = Math.max(20, mouse.x - sensors[id].x);
+                sensors[id].h = Math.max(20, mouse.y - sensors[id].y);
             }
             drawCanvas();
         }
     }
 
-    function stopDrag() {
-        isDragging = false;
-        isResizing = false;
-        canvas.style.cursor = 'default';
-        initialPinchDistance = null;
+    function handleEnd() {
+        isDraggingObj = false; isResizingObj = false; isPanningWp = false;
+        initialPinchDist = null; ws.style.cursor = 'default';
     }
 
-    canvas.addEventListener('wheel', function(e) {
+    // Pinch Zoom Latar (Mobile) & Scroll Mouse (PC)
+    ws.addEventListener('wheel', e => {
         e.preventDefault();
-        if (!activeObj) return; 
-        let zoomAmount = e.deltaY > 0 ? 0.95 : 1.05; 
-        
-        if (activeObj === 'struk') s.scale *= zoomAmount;
-        else if (activeObj === 'teks') t.size *= zoomAmount;
-        else if (activeObj.startsWith('sensor_')) {
-            let idx = parseInt(activeObj.split('_')[1]);
-            sensors[idx].w *= zoomAmount;
-            sensors[idx].h *= zoomAmount;
+        let zoomAmount = e.deltaY > 0 ? 0.9 : 1.1;
+        // Jika ada objek aktif, perbesar objek. Jika tidak, perbesar workspace.
+        if (activeObj) {
+            if (activeObj === 'struk') s.scale *= zoomAmount;
+            else if (activeObj === 'teks') t.size *= zoomAmount;
+            else if (activeObj.startsWith('sensor_')) { let id = parseInt(activeObj.split('_')[1]); sensors[id].w *= zoomAmount; sensors[id].h *= zoomAmount; }
+            drawCanvas();
+        } else {
+            // Zoom Workspace dengan titik pusat mouse
+            let rect = ws.getBoundingClientRect();
+            let mx = e.clientX - rect.left; let my = e.clientY - rect.top;
+            wpZoom *= zoomAmount;
+            wpPanX = mx - (mx - wpPanX) * zoomAmount;
+            wpPanY = my - (my - wpPanY) * zoomAmount;
+            applyWorkspaceTransform();
         }
-        drawCanvas();
     }, {passive: false});
 
-    canvas.addEventListener('touchmove', function(e) {
-        if (e.touches.length === 2 && activeObj) {
+    ws.addEventListener('touchmove', e => {
+        if (e.touches.length === 2) {
             e.preventDefault();
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+            let cx1 = e.touches[0].clientX, cy1 = e.touches[0].clientY;
+            let cx2 = e.touches[1].clientX, cy2 = e.touches[1].clientY;
+            let dist = Math.hypot(cx1 - cx2, cy1 - cy2);
+            let centerClientX = (cx1 + cx2) / 2;
+            let centerClientY = (cy1 + cy2) / 2;
 
-            if (initialPinchDistance == null) {
-                initialPinchDistance = distance;
-                if (activeObj === 'struk') initialScaleSize = s.scale;
-                else if (activeObj === 'teks') initialScaleSize = t.size;
-                else if (activeObj.startsWith('sensor_')) {
-                    let idx = parseInt(activeObj.split('_')[1]);
-                    initialScaleSize = { w: sensors[idx].w, h: sensors[idx].h };
+            if (initialPinchDist == null) {
+                initialPinchDist = dist;
+                if (activeObj) {
+                    if (activeObj === 'struk') initialObjScale = s.scale;
+                    else if (activeObj === 'teks') initialObjScale = t.size;
+                    else if (activeObj.startsWith('sensor_')) { let id = parseInt(activeObj.split('_')[1]); initialObjScale = { w: sensors[id].w, h: sensors[id].h }; }
+                } else {
+                    initWpZoom = wpZoom; initPanX = wpPanX; initPanY = wpPanY;
+                    initCenterX = centerClientX; initCenterY = centerClientY;
                 }
             } else {
-                const scale = distance / initialPinchDistance;
-                if (activeObj === 'struk') {
-                    s.scale = initialScaleSize * scale;
-                } else if (activeObj === 'teks') {
-                    t.size = initialScaleSize * scale;
-                } else if (activeObj.startsWith('sensor_')) {
-                    let idx = parseInt(activeObj.split('_')[1]);
-                    sensors[idx].w = initialScaleSize.w * scale;
-                    sensors[idx].h = initialScaleSize.h * scale;
+                let scaleFactor = dist / initialPinchDist;
+                if (activeObj) {
+                    if (activeObj === 'struk') s.scale = initialObjScale * scaleFactor;
+                    else if (activeObj === 'teks') t.size = initialObjScale * scaleFactor;
+                    else if (activeObj.startsWith('sensor_')) { let id = parseInt(activeObj.split('_')[1]); sensors[id].w = initialObjScale.w * scaleFactor; sensors[id].h = initialObjScale.h * scaleFactor; }
+                    drawCanvas();
+                } else {
+                    wpZoom = initWpZoom * scaleFactor;
+                    wpPanX = initCenterX - (initCenterX - initPanX) * scaleFactor;
+                    wpPanY = initCenterY - (initCenterY - initPanY) * scaleFactor;
+                    applyWorkspaceTransform();
                 }
-                drawCanvas();
             }
         }
     }, {passive: false});
 
-    canvas.addEventListener('mousedown', startDrag);
-    canvas.addEventListener('mousemove', drag);
-    window.addEventListener('mouseup', stopDrag);
+    // Mendaftarkan Event
+    ws.addEventListener('mousedown', handleStart);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
     
-    canvas.addEventListener('touchstart', startDrag, {passive: false});
-    canvas.addEventListener('touchmove', drag, {passive: false});
-    window.addEventListener('touchend', stopDrag);
+    ws.addEventListener('touchstart', handleStart, {passive: false});
+    window.addEventListener('touchmove', handleMove, {passive: false});
+    window.addEventListener('touchend', handleEnd);
 
 </script>
 </body>
