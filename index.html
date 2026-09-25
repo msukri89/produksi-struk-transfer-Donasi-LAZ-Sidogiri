@@ -87,7 +87,7 @@
         .header-edit:active { transform:scale(.96); }
         .header-edit:disabled { opacity:.42; }
         .header-edit.reset { color:#fff; }
-        .header-edit svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+        .header-edit svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
         .header-edit-label { display:none; }
         .header-save {
             width:40px; height:40px; border:1px solid rgba(255,255,255,.16);
@@ -210,13 +210,13 @@
         </div>
         <div class="header-actions">
             <button id="btnUndo" class="header-edit" title="Urungkan perubahan" aria-label="Urungkan perubahan" disabled>
-                <svg viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M5 12h8a7 7 0 0 1 7 7"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg>
             </button>
             <button id="btnReset" class="header-edit reset" title="Reset editor" aria-label="Reset editor">
-                <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="m7 7 1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 5v7h7"/></svg>
             </button>
             <a id="downloadBtn" class="header-save" style="display:none;" download="Bukti_Donasi.jpg" title="Simpan Bukti" aria-label="Simpan Bukti">
-                <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
             </a>
             <div class="status"><span class="status-dot"></span><span class="status-text">Siap digunakan</span></div>
         </div>
@@ -287,11 +287,11 @@
 
     <!-- Toolbar Bawah -->
     <div id="toolbar">
-        <button class="tool-btn" onclick="togglePanel('template')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="8.2" cy="9" r="1.4"/><path d="m5.5 17 4.1-4.1 3 2.8 2.4-2.4 3.5 3.7"/></svg></span>Template</button>
+        <button class="tool-btn" onclick="togglePanel('template')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.3"/><path d="m5.5 17 3.7-3.7 2.8 2.7 2.3-2.3 4.2 3.3"/></svg></span>Template</button>
         <button class="tool-btn" onclick="togglePanel('struk')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14v15H5z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5"/><path d="M7 19.5 8 21l2-1.5 2 1.5 2-1.5 2 1.5 1-1.5"/></svg></span>Struk</button>
-        <button class="tool-btn" onclick="togglePanel('nominal')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18 11.2 6h1.6L17 18"/><path d="M8.5 14h7"/><path d="M5.5 20h13"/></svg></span>Teks</button>
+        <button class="tool-btn" onclick="togglePanel('nominal')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18 11.3 6h1.4L17 18"/><path d="M8.7 14h6.6"/></svg></span>Teks</button>
         <button class="tool-btn" onclick="togglePanel('crop')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M8 3v13a5 5 0 0 0 5 5h8M3 8h13a5 5 0 0 0 5 5v8"/></svg></span>Potong</button>
-        <button class="tool-btn" onclick="togglePanel('sensor')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12s3.1-5.5 8.5-5.5 8.5 5.5 8.5 5.5-3.1 5.5-8.5 5.5-8.5-5.5-8.5-5.5Z"/><circle cx="12" cy="12" r="2.6"/></svg></span>Privasi</button>
+        <button class="tool-btn" onclick="togglePanel('sensor')"><span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg></span>Privasi</button>
 
     </div>
 
