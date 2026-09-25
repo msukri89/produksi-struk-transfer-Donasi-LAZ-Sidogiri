@@ -78,27 +78,35 @@
         .status-text { display:none; }
         .header-actions { display:flex; align-items:center; gap:6px; }
         .header-edit {
-            width:40px; height:40px; border:1px solid rgba(255,255,255,.16); border-radius:11px;
-            background:rgba(255,255,255,.08); color:#fff; display:grid; place-items:center;
+            width:40px; height:40px; border:0; border-radius:50%;
+            background:transparent; color:#fff; display:grid; place-items:center;
             cursor:pointer; padding:0;
-            transition:background .16s, border-color .16s, transform .16s;
+            transition:opacity .16s, transform .16s;
         }
-        .header-edit:hover { background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.24); }
-        .header-edit:active { transform:scale(.96); }
+        .header-edit:hover { opacity:.78; }
+        .header-edit:active { transform:scale(.92); }
         .header-edit:disabled { opacity:.42; }
         .header-edit.reset { color:#fff; }
-        .header-edit svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+        .header-edit svg {
+            display:block; width:22px; height:22px;
+            stroke:currentColor; fill:none; stroke-width:1.9;
+            stroke-linecap:round; stroke-linejoin:round;
+        }
         .header-edit-label { display:none; }
         .header-save {
-            width:40px; height:40px; border:1px solid rgba(255,255,255,.16);
-            border-radius:11px; background:rgba(255,255,255,.08);
-            color:#fff; display:grid; place-items:center; padding:0;
+            width:40px; height:40px; border:0; border-radius:50%;
+            background:transparent; color:#fff;
+            display:grid; place-items:center; padding:0;
             text-decoration:none; cursor:pointer;
-            transition:background .16s, border-color .16s, transform .16s;
+            transition:opacity .16s, transform .16s;
         }
-        .header-save:hover { background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.24); }
-        .header-save:active { transform:scale(.96); }
-        .header-save svg { width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+        .header-save:hover { opacity:.78; }
+        .header-save:active { transform:scale(.92); }
+        .header-save svg {
+            display:block; width:22px; height:22px;
+            stroke:currentColor; fill:none; stroke-width:1.9;
+            stroke-linecap:round; stroke-linejoin:round;
+        }
 
 
         #workspace {
@@ -139,8 +147,8 @@
             color:rgba(255,255,255,.86); font-weight:600; transition:background .16s,color .16s,transform .16s;
             border-radius:12px;
         }
-        .tool-btn:hover { background:rgba(255,255,255,.07); color:#fff; }
-        .tool-btn.active { background:rgba(255,255,255,.13); color:#fff; }
+        .tool-btn:hover { color:#fff; }
+        .tool-btn.active { color:#fff; }
         .tool-btn:active { transform:scale(.96); }
         .tool-btn .icon {
             display:grid; place-items:center; width:34px; height:34px;
@@ -210,10 +218,10 @@
         </div>
         <div class="header-actions">
             <button id="btnUndo" class="header-edit" title="Urungkan perubahan" aria-label="Urungkan perubahan" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v1"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5"/><path d="M4 12h9a6 6 0 0 1 6 6"/></svg>
             </button>
             <button id="btnReset" class="header-edit reset" title="Reset editor" aria-label="Reset editor">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 5v7h7"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 5v6h6"/></svg>
             </button>
             <a id="downloadBtn" class="header-save" style="display:none;" download="Bukti_Donasi.jpg" title="Simpan Bukti" aria-label="Simpan Bukti">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
