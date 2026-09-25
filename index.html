@@ -165,9 +165,9 @@
             width:18px;
             height:18px;
             border:2px solid #fff;
-            background:rgba(30,100,102,.92);
-            border-radius:5px;
-            box-shadow:0 2px 7px rgba(0,0,0,.22);
+            background:#b8d334;
+            border-radius:6px;
+            box-shadow:0 2px 7px rgba(0,0,0,.18);
             pointer-events:none;
             transform:translate(-50%,-50%);
         }
@@ -216,7 +216,8 @@
         }
         @media (max-width: 520px) {
             .brand-title { font-size:14px; }
-            .tool-btn { width:20%; min-width:0; }
+            .tool-btn { width:25%; min-width:0; }
+            #toolbar { gap:0; padding-left:0; padding-right:0; }
         }
     </style></head>
 <body>
@@ -562,11 +563,19 @@
     // --- MENGGAMBAR ELEMEN ---
     function getBoundingBox(type) {
         if (type === 'struk' && strukLoaded) {
-            let ct = document.getElementById('cropT').value / 100, cb = document.getElementById('cropB').value / 100;
-            let cl = document.getElementById('cropL').value / 100, cr = document.getElementById('cropR').value / 100;
-            let sw = imgStruk.width * (1 - cl - cr), sh = imgStruk.height * (1 - ct - cb);
-            let displayW = s.w * s.scale;
-            return { x: s.x, y: s.y, w: displayW, h: displayW * (sh / sw) };
+            const ct = +document.getElementById('cropT').value / 100;
+            const cb = +document.getElementById('cropB').value / 100;
+            const cl = +document.getElementById('cropL').value / 100;
+            const cr = +document.getElementById('cropR').value / 100;
+            const originalW = s.w * s.scale;
+            const originalH = originalW * (imgStruk.height / imgStruk.width);
+            const scaleX = originalW / imgStruk.width;
+            return {
+                x: s.x + imgStruk.width * cl * scaleX,
+                y: s.y + imgStruk.height * ct * scaleX,
+                w: imgStruk.width * (1 - cl - cr) * scaleX,
+                h: imgStruk.height * (1 - ct - cb) * scaleX
+            };
         } else if (type === 'teks') {
             ctx.font = `${t.size}px 'Gilroy-Bold', Arial, sans-serif`;
             return { x: t.x, y: t.y - (t.size * 0.9), w: ctx.measureText("Rp. " + document.getElementById('inputNominal').value).width, h: t.size * 1.2 };
@@ -582,14 +591,22 @@
         ctx.drawImage(imgTemplate, 0, 0, canvas.width, canvas.height);
 
         if (strukLoaded) {
-            let ct = document.getElementById('cropT').value / 100, cb = document.getElementById('cropB').value / 100;
-            let cl = document.getElementById('cropL').value / 100, cr = document.getElementById('cropR').value / 100;
-            let sW = imgStruk.width * (1 - cl - cr), sH = imgStruk.height * (1 - ct - cb);
-            let dW = s.w * s.scale, dH = dW * (sH / sW);
+            const ct = +document.getElementById('cropT').value / 100;
+            const cb = +document.getElementById('cropB').value / 100;
+            const cl = +document.getElementById('cropL').value / 100;
+            const cr = +document.getElementById('cropR').value / 100;
+            const originalW = s.w * s.scale;
+            const scaleX = originalW / imgStruk.width;
+            const sW = imgStruk.width * (1 - cl - cr);
+            const sH = imgStruk.height * (1 - ct - cb);
+            const dX = s.x + imgStruk.width * cl * scaleX;
+            const dY = s.y + imgStruk.height * ct * scaleX;
+            const dW = sW * scaleX;
+            const dH = sH * scaleX;
 
             ctx.save();
             ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 20; ctx.shadowOffsetX = 5; ctx.shadowOffsetY = 10;
-            ctx.drawImage(imgStruk, imgStruk.width * cl, imgStruk.height * ct, sW, sH, s.x, s.y, dW, dH);
+            ctx.drawImage(imgStruk, imgStruk.width * cl, imgStruk.height * ct, sW, sH, dX, dY, dW, dH);
             ctx.restore();
         }
 
@@ -607,7 +624,7 @@
             let box = getBoundingBox(activeObj);
             if (box) {
                 ctx.save();
-                ctx.strokeStyle = 'rgba(255,255,255,.92)'; ctx.lineWidth = 2 / wpZoom; ctx.setLineDash([8 / wpZoom, 8 / wpZoom]);
+                ctx.strokeStyle = '#b8d334'; ctx.lineWidth = 2 / wpZoom; ctx.setLineDash([8 / wpZoom, 8 / wpZoom]);
                 ctx.strokeRect(box.x, box.y, box.w, box.h);
                 ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.setLineDash([]);
                 if (activeObj === 'struk') {
@@ -619,7 +636,7 @@
                         [box.x + box.w, box.y + box.h / 2]
                     ];
                     pts.forEach(([hx, hy]) => {
-                        ctx.fillStyle = 'rgba(30,100,102,.92)';
+                        ctx.fillStyle = '#b8d334';
                         ctx.strokeStyle = '#fff';
                         ctx.lineWidth = 2 / wpZoom;
                         ctx.fillRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
@@ -668,29 +685,34 @@
         return null;
     }
 
-    function updateDirectCrop(handle, mouse, box) {
-        if (!box || !strukLoaded) return;
-        const minCrop = 0;
+    function updateDirectCrop(handle, mouse) {
+        if (!strukLoaded) return;
+
+        const originalW = s.w * s.scale;
+        const originalH = originalW * (imgStruk.height / imgStruk.width);
         const maxCrop = 45;
+
+        let top = +document.getElementById('cropT').value;
+        let bottom = +document.getElementById('cropB').value;
+        let left = +document.getElementById('cropL').value;
+        let right = +document.getElementById('cropR').value;
+
         if (handle === 'crop_top') {
-            const ratio = Math.max(0, Math.min(maxCrop, ((mouse.y - box.y) / box.h) * 100));
-            document.getElementById('cropT').value = Math.round(ratio);
+            top = Math.max(0, Math.min(maxCrop, ((mouse.y - s.y) / originalH) * 100));
         } else if (handle === 'crop_bottom') {
-            const ratio = Math.max(0, Math.min(maxCrop, ((box.y + box.h - mouse.y) / box.h) * 100));
-            document.getElementById('cropB').value = Math.round(ratio);
+            bottom = Math.max(0, Math.min(maxCrop, ((s.y + originalH - mouse.y) / originalH) * 100));
         } else if (handle === 'crop_left') {
-            const ratio = Math.max(0, Math.min(maxCrop, ((mouse.x - box.x) / box.w) * 100));
-            document.getElementById('cropL').value = Math.round(ratio);
+            left = Math.max(0, Math.min(maxCrop, ((mouse.x - s.x) / originalW) * 100));
         } else if (handle === 'crop_right') {
-            const ratio = Math.max(0, Math.min(maxCrop, ((box.x + box.w - mouse.x) / box.w) * 100));
-            document.getElementById('cropR').value = Math.round(ratio);
+            right = Math.max(0, Math.min(maxCrop, ((s.x + originalW - mouse.x) / originalW) * 100));
         }
 
-        const top = +document.getElementById('cropT').value;
-        const bottom = +document.getElementById('cropB').value;
-        const left = +document.getElementById('cropL').value;
-        const right = +document.getElementById('cropR').value;
         if (top + bottom > 85 || left + right > 85) return;
+
+        document.getElementById('cropT').value = Math.round(top);
+        document.getElementById('cropB').value = Math.round(bottom);
+        document.getElementById('cropL').value = Math.round(left);
+        document.getElementById('cropR').value = Math.round(right);
         drawCanvas();
     }
 
@@ -787,7 +809,7 @@
             e.preventDefault();
             let mouse = getMousePos(e);
             if (activeObj === 'struk' && activeCropHandle) {
-                updateDirectCrop(activeCropHandle, mouse, getBoundingBox('struk'));
+                updateDirectCrop(activeCropHandle, mouse);
             } else if (activeObj === 'struk') { let nw = mouse.x - s.x; if (nw > 50) s.scale = nw / s.w; } 
             else if (activeObj === 'teks') { t.size = initialObjScale + ((mouse.x - startMouseX) * 0.15); if (t.size < 10) t.size = 10; } 
             else if (activeObj.startsWith('sensor_')) {
